@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'screens/splash.dart'; 
+import 'package:frontend/home/home_page.dart';
+//import 'screens/splash.dart'; 
 import 'package:google_fonts/google_fonts.dart';
 
 void main() {
@@ -18,7 +19,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         textTheme: GoogleFonts.interTextTheme()
       ),
-      home: const LoginPage(), 
+      home: const HomePage(), 
     );
   }
 }
