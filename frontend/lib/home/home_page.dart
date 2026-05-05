@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/home/dashboard_view.dart';
 import 'package:frontend/message/message_page.dart';
 import 'package:frontend/notification/notification_page.dart';
+import 'package:frontend/profile/profile_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomePage extends StatefulWidget {
@@ -19,7 +20,7 @@ class _HomePageState extends State<HomePage> {
     const Center(child: Text('Request Page')),
     const MessagePage(),
     const NotificationPage(),
-    const Center(child: Text('Profile Page')),
+    ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
