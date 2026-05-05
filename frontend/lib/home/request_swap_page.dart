@@ -14,8 +14,66 @@ class RequestSwapPage extends StatefulWidget {
 class _RequestSwapPageState extends State<RequestSwapPage> {
   String selectedOffer = "";
   String selectedWant = "";
-
   final List<String> skills = ["Design Graphic", "React", "Flutter"];
+
+  void _showTopSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).size.height - 130,
+          left: 20,
+          right: 20,
+        ),
+        backgroundColor: const Color(0xFFEDFDF3),
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        content: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.check_circle,
+              color: Color(0XFF008A2E),
+              size: 35,
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Swap request sent!',
+                    style: GoogleFonts.inter(
+                      color: const Color(0XFF008A2E),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Your request to swap has been sent! Dont forget to check your messages from them.',
+                    style: GoogleFonts.inter(
+                      color: Color(0XFF008A2E),
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +103,6 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
               style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 25),
-
             Container(
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
@@ -68,25 +125,17 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
               ),
             ),
             const SizedBox(height: 25),
-
             _buildSelectionCard("Your Skill to Offer", selectedOffer, (val) {
               setState(() => selectedOffer = val);
             }),
-
             const SizedBox(height: 20),
-
             _buildSelectionCard("Skill You Want from ${widget.name}", selectedWant, (val) {
               setState(() => selectedWant = val);
             }),
-
             const SizedBox(height: 20),
-
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-              ),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -95,7 +144,7 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
                   TextField(
                     maxLines: 4,
                     decoration: InputDecoration(
-                      hintText: 'Introduce yourself and share why you’d like to swap skills...',
+                      hintText: 'Introduce yourself...',
                       hintStyle: GoogleFonts.inter(color: Colors.grey, fontSize: 14),
                       filled: true,
                       fillColor: Colors.white,
@@ -112,28 +161,27 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 30),
-
-            Container(
-              width: double.infinity,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF7C3AED), Color(0xFFEC4899)],
+            GestureDetector(
+              onTap: _showTopSnackBar,
+              child: Container(
+                width: double.infinity,
+                height: 60,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  gradient: const LinearGradient(colors: [Color(0xFF7C3AED), Color(0xFFEC4899)]),
                 ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.send_rounded, color: Colors.white),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Send Request',
-                    style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                ],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.send_rounded, color: Colors.white),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Send Request',
+                      style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 50),
@@ -147,10 +195,7 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
