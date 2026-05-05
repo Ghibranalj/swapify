@@ -210,7 +210,7 @@ class ProfilePage extends StatelessWidget {
                         const Color(0xFFE74C3C), 
                         Colors.white,
                         onTap: () {
-                          // Logika logout di sini
+                          // logic logout kl nnt mo tmbh logout
                         }
                       ),
                     ],

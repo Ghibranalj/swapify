@@ -3,6 +3,7 @@ import 'package:frontend/home/dashboard_view.dart';
 import 'package:frontend/message/message_page.dart';
 import 'package:frontend/notification/notification_page.dart';
 import 'package:frontend/profile/profile_page.dart';
+import 'package:frontend/request/request_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomePage extends StatefulWidget {
@@ -17,10 +18,10 @@ class _HomePageState extends State<HomePage> {
 
   final List<Widget> _pages = [
     const DashboardView(), 
-    const Center(child: Text('Request Page')),
+    const RequestPage(),
     const MessagePage(),
     const NotificationPage(),
-    ProfilePage(),
+    const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
