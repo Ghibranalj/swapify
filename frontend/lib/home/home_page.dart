@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/home/dashboard_view.dart';
+import 'package:frontend/message/message_page.dart';
+import 'package:frontend/notification/notification_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class HomePage extends StatefulWidget {
@@ -15,8 +17,8 @@ class _HomePageState extends State<HomePage> {
   final List<Widget> _pages = [
     const DashboardView(), 
     const Center(child: Text('Request Page')),
-    const Center(child: Text('Messages Page')),
-    const Center(child: Text('Notification Page')),
+    const MessagePage(),
+    const NotificationPage(),
     const Center(child: Text('Profile Page')),
   ];
 
@@ -59,7 +61,7 @@ class _HomePageState extends State<HomePage> {
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(AssetImage("images/notification.png")),
-            label: 'Notif',
+            label: 'Notification',
           ),
           BottomNavigationBarItem(
             icon: ImageIcon(AssetImage("images/profile.png")),
