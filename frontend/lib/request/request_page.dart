@@ -73,96 +73,112 @@ class _RequestPageState extends State<RequestPage> {
   }
 
   void _showRatingDialog(BuildContext context, String name) {
+    int selectedRating = 0; 
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-          child: Padding(
-            padding: const EdgeInsets.all(25),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Color(0xFFE0E0E0),
-                  child: Icon(Icons.person, size: 50, color: Colors.white),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  "Rate Your Experience",
-                  style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "How was your swap with $name?",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[500]),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (index) => const Icon(
-                    Icons.star_border_rounded, 
-                    size: 40, 
-                    color: Colors.grey,
-                  )),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    hintText: "Share your experience (optional)...",
-                    hintStyle: GoogleFonts.inter(fontSize: 14, color: Colors.grey[400]),
-                    filled: true,
-                    fillColor: Colors.white,
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              child: Padding(
+                padding: const EdgeInsets.all(25),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Color(0xFFE0E0E0),
+                      child: Icon(Icons.person, size: 50, color: Colors.white),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(color: Color(0xFF8B5CF6)),
+                    const SizedBox(height: 20),
+                    Text(
+                      "Rate Your Experience",
+                      style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "How was your swap with $name?",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[500]),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return GestureDetector(
+                          onTap: () {
+                            setDialogState(() {
+                              selectedRating = index + 1;
+                            });
+                          },
+                          child: Icon(
+                            index < selectedRating ? Icons.star_rounded : Icons.star_outline_rounded,
+                            size: 45,
+                            color: index < selectedRating ? const Color(0xFFFFB800) : const Color.fromARGB(255, 179, 179, 179),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: "Share your experience (optional)...",
+                        hintStyle: GoogleFonts.inter(fontSize: 14, color: Colors.grey[400]),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: const BorderSide(color: Color(0xFF8B5CF6)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+                    Container(
+                      width: double.infinity,
+                      height: 55,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(35),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8B5CF6), Color(0xFFF472B6)],
+                        ),
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
+                        ),
+                        child: Text(
+                          "Submit Rating",
+                          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        "Skip for now",
+                        style: GoogleFonts.inter(
+                          color: Colors.black, 
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 25),
-                Container(
-                  width: double.infinity,
-                  height: 55,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF8B5CF6), Color(0xFFF472B6)],
-                    ),
-                  ),
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    ),
-                    child: Text(
-                      "Submit Rating",
-                      style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    "Skip for now",
-                    style: GoogleFonts.inter(
-                      color: Colors.black, 
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -180,7 +196,11 @@ class _RequestPageState extends State<RequestPage> {
             children: [
               Text(
                 'My Request',
-                style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold),
+                style: GoogleFonts.inter(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -188,7 +208,6 @@ class _RequestPageState extends State<RequestPage> {
                 style: GoogleFonts.inter(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 20),
-
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
@@ -211,7 +230,6 @@ class _RequestPageState extends State<RequestPage> {
                 ),
               ),
               const SizedBox(height: 25),
-
               if (_selectedTab == 0) ...[
                 _buildRequestCard(
                   name: "Maya Rodriguez",
@@ -336,7 +354,7 @@ class _RequestPageState extends State<RequestPage> {
                       MaterialPageRoute(
                         builder: (context) => ChatPage(
                           name: name,
-                          image: 'assets/images/user_placeholder.png', 
+                          image: 'images/user2.png', 
                         ),
                       ),
                     );
@@ -374,13 +392,12 @@ class _RequestPageState extends State<RequestPage> {
             ),
           ),
           const SizedBox(height: 15),
-          
           if (tabType == "done")
             Container(
               width: double.infinity,
-              height: 50,
+              height: 55,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
+                borderRadius: BorderRadius.circular(35),
                 gradient: const LinearGradient(
                   colors: [Color(0xFF8B5CF6), Color(0xFFF472B6)],
                 ),
@@ -390,11 +407,11 @@ class _RequestPageState extends State<RequestPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
                 ),
                 child: Text(
                   "Rate This Swap", 
-                  style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold)
+                  style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)
                 ),
               ),
             )
@@ -407,10 +424,13 @@ class _RequestPageState extends State<RequestPage> {
                   backgroundColor: const Color(0xFF34D399),
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: Text("Mark as Complete", style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                child: Text(
+                  "Mark as Complete", 
+                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)
+                ),
               ),
             )
           else
@@ -421,28 +441,30 @@ class _RequestPageState extends State<RequestPage> {
                     onPressed: () {
                       _showSuccessSnackBar(context);
                     },
-                    icon: const Icon(Icons.check, size: 18),
+                    icon: const Icon(Icons.check, size: 20),
                     label: const Text("Accept"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF34D399),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {},
-                    icon: const Icon(Icons.close, size: 18),
+                    icon: const Icon(Icons.close, size: 20),
                     label: const Text("Decline"),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.black87,
-                      side: BorderSide(color: Colors.grey[200]!),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      foregroundColor: Colors.black,
+                      side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
                 ),
