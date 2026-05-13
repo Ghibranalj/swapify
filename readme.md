@@ -1,7 +1,6 @@
 # Swapify
 Swapify is an app for students to swap skills with other students.
 
-
 ## Requirement
 ### USER:
 User has
@@ -39,3 +38,6 @@ User has
 - timestamp
 
 ### Oauth google
+
+## Contributor
+- Ethen Brenden Kwok - 2802481632
