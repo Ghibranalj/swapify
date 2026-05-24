@@ -2,6 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/message/chat_page.dart'; 
 
+class RequestItem {
+  final String name;
+  final String date;
+  final String skill1;
+  final String skill2;
+  final String message;
+  String tabType;
+
+  RequestItem({
+    required this.name,
+    required this.date,
+    required this.skill1,
+    required this.skill2,
+    required this.message,
+    required this.tabType,
+  });
+}
+
 class RequestPage extends StatefulWidget {
   const RequestPage({super.key});
 
@@ -11,6 +29,33 @@ class RequestPage extends StatefulWidget {
 
 class _RequestPageState extends State<RequestPage> {
   int _selectedTab = 0;
+
+  final List<RequestItem> _requests = [
+    RequestItem(
+      name: "Maya Rodriguez",
+      date: "03/03/2026",
+      skill1: "Spanish",
+      skill2: "UI/UX Design",
+      message: "Hey! I'd love to learn UI/UX from you. I can teach you Spanish in exchange! 😊",
+      tabType: "pending",
+    ),
+    RequestItem(
+      name: "Alex Chen",
+      date: "03/01/2026",
+      skill1: "React",
+      skill2: "Italian Cooking",
+      message: "I'd love to learn cooking from you!",
+      tabType: "active",
+    ),
+    RequestItem(
+      name: "Sarah Jenkins",
+      date: "25/02/2026",
+      skill1: "UI/UX Design",
+      skill2: "Photography",
+      message: "Let's learn from each other! 📸",
+      tabType: "done",
+    ),
+  ];
 
   void _showSuccessSnackBar(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -186,6 +231,19 @@ class _RequestPageState extends State<RequestPage> {
 
   @override
   Widget build(BuildContext context) {
+    int pendingCount = _requests.where((r) => r.tabType == "pending").length;
+    int activeCount = _requests.where((r) => r.tabType == "active").length;
+    int doneCount = _requests.where((r) => r.tabType == "done").length;
+
+    List<RequestItem> filteredRequests = [];
+    if (_selectedTab == 0) {
+      filteredRequests = _requests.where((r) => r.tabType == "pending").toList();
+    } else if (_selectedTab == 1) {
+      filteredRequests = _requests.where((r) => r.tabType == "active").toList();
+    } else {
+      filteredRequests = _requests.where((r) => r.tabType == "done").toList();
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7FF),
       body: SafeArea(
@@ -223,41 +281,14 @@ class _RequestPageState extends State<RequestPage> {
                 ),
                 child: Row(
                   children: [
-                    _buildTabItem(0, "Pending", 2, const Color(0xFFFF9442), Icons.history),
-                    _buildTabItem(1, "Active", 1, const Color(0xFF00B4D8), Icons.notifications_none),
-                    _buildTabItem(2, "Done", 1, const Color(0xFF34D399), Icons.check),
+                    _buildTabItem(0, "Pending", pendingCount, const Color(0xFF7C3AED), 'images/icon-pending.png'),
+                    _buildTabItem(1, "Active", activeCount, const Color(0xFFF472B6), 'images/icon-active.png'),
+                    _buildTabItem(2, "Done", doneCount, const Color(0xFF06B6D4), 'images/icon-done.png'),
                   ],
                 ),
               ),
               const SizedBox(height: 25),
-              if (_selectedTab == 0) ...[
-                _buildRequestCard(
-                  name: "Maya Rodriguez",
-                  date: "03/03/2026",
-                  skill1: "Spanish",
-                  skill2: "UI/UX Design",
-                  message: "Hey! I'd love to learn UI/UX from you. I can teach you Spanish in exchange! 😊",
-                  tabType: "pending",
-                ),
-              ] else if (_selectedTab == 1) ...[
-                _buildRequestCard(
-                  name: "Alex Chen",
-                  date: "03/01/2026",
-                  skill1: "React",
-                  skill2: "Italian Cooking",
-                  message: "I'd love to learn cooking from you!",
-                  tabType: "active",
-                ),
-              ] else ...[
-                _buildRequestCard(
-                  name: "Sarah Jenkins",
-                  date: "25/02/2026",
-                  skill1: "UI/UX Design",
-                  skill2: "Photography",
-                  message: "Let's learn from each other! 📸",
-                  tabType: "done",
-                ),
-              ],
+              ...filteredRequests.map((request) => _buildRequestCard(request)).toList(),
             ],
           ),
         ),
@@ -265,7 +296,7 @@ class _RequestPageState extends State<RequestPage> {
     );
   }
 
-  Widget _buildTabItem(int index, String label, int count, Color activeColor, IconData icon) {
+  Widget _buildTabItem(int index, String label, int count, Color activeColor, String iconPath) {
     bool isActive = _selectedTab == index;
     return Expanded(
       child: GestureDetector(
@@ -280,7 +311,7 @@ class _RequestPageState extends State<RequestPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18, color: isActive ? Colors.white : Colors.black87),
+              Image.asset(iconPath, width: 18, color: isActive ? Colors.white : Colors.black87),
               const SizedBox(width: 4),
               Text(
                 label,
@@ -292,14 +323,22 @@ class _RequestPageState extends State<RequestPage> {
               ),
               const SizedBox(width: 4),
               Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: isActive ? Colors.white.withOpacity(0.2) : const Color(0xFFE54D42),
+                width: 22,
+                height: 22,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE54D42),
                   shape: BoxShape.circle,
                 ),
                 child: Text(
                   count.toString(),
-                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white, 
+                    fontSize: 11, 
+                    fontWeight: FontWeight.bold,
+                    height: 1.0,
+                  ),
                 ),
               )
             ],
@@ -309,14 +348,7 @@ class _RequestPageState extends State<RequestPage> {
     );
   }
 
-  Widget _buildRequestCard({
-    required String name,
-    required String date,
-    required String skill1,
-    required String skill2,
-    required String message,
-    required String tabType,
-  }) {
+  Widget _buildRequestCard(RequestItem request) {
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(bottom: 15),
@@ -341,19 +373,19 @@ class _RequestPageState extends State<RequestPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text(date, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[500])),
+                    Text(request.name, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(request.date, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[500])),
                   ],
                 ),
               ),
-              if (tabType == "active")
+              if (request.tabType == "active")
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ChatPage(
-                          name: name,
+                          name: request.name,
                           image: 'images/user2.png', 
                         ),
                       ),
@@ -378,21 +410,34 @@ class _RequestPageState extends State<RequestPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Stack(
+                  alignment: Alignment.center,
                   children: [
-                    _buildSkillChip(skill1, const Color(0xFF8B5CF6)),
-                    const Icon(Icons.swap_horiz, color: Color(0xFFF472B6)),
-                    _buildSkillChip(skill2, const Color(0xFF06B6D4)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildSkillChip(request.skill1, const Color(0xFF7C3AED)),
+                        _buildSkillChip(request.skill2, const Color(0xFF06B6D4)),
+                      ],
+                    ),
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Color(0xFF7C3AED), Color(0xFFF472B6)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ).createShader(bounds),
+                      blendMode: BlendMode.srcIn,
+                      child: Image.asset('images/icon-swap.png', width: 24),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(message, style: GoogleFonts.inter(fontSize: 14, color: Colors.black87)),
+                Text(request.message, style: GoogleFonts.inter(fontSize: 14, color: Colors.black87)),
               ],
             ),
           ),
           const SizedBox(height: 15),
-          if (tabType == "done")
+          if (request.tabType == "done")
             Container(
               width: double.infinity,
               height: 55,
@@ -403,7 +448,7 @@ class _RequestPageState extends State<RequestPage> {
                 ),
               ),
               child: ElevatedButton(
-                onPressed: () => _showRatingDialog(context, name),
+                onPressed: () => _showRatingDialog(context, request.name),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
@@ -415,17 +460,22 @@ class _RequestPageState extends State<RequestPage> {
                 ),
               ),
             )
-          else if (tabType == "active")
+          else if (request.tabType == "active")
             SizedBox(
               width: double.infinity,
+              height: 55,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  setState(() {
+                    request.tabType = "done";
+                    _selectedTab = 2;
+                  });
+                },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF34D399),
+                  backgroundColor: const Color(0xFF06B6D4),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: Text(
                   "Mark as Complete", 
@@ -437,34 +487,54 @@ class _RequestPageState extends State<RequestPage> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      _showSuccessSnackBar(context);
-                    },
-                    icon: const Icon(Icons.check, size: 20),
-                    label: const Text("Accept"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF34D399),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
+                  child: Container(
+                    height: 55,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(35),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF7C3AED), Color(0xFFF472B6)],
+                      ),
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        _showSuccessSnackBar(context);
+                        setState(() {
+                          request.tabType = "active";
+                          _selectedTab = 1;
+                        });
+                      },
+                      icon: const Icon(Icons.check, size: 20),
+                      label: const Text("Accept"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
+                        textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.close, size: 20),
-                    label: const Text("Decline"),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.black,
-                      side: BorderSide(color: Colors.grey[300]!, width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
+                  child: SizedBox(
+                    height: 55,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _requests.remove(request);
+                        });
+                      },
+                      icon: const Icon(Icons.close, size: 20),
+                      label: const Text("Decline"),
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF5F3FF),
+                        foregroundColor: Colors.black,
+                        side: BorderSide(color: Colors.grey[300]!, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(35)),
+                        textStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
                     ),
                   ),
                 ),
