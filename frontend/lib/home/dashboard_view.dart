@@ -3,7 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'user_detail_page.dart'; 
 
 class DashboardView extends StatelessWidget {
-  const DashboardView({super.key});
+  final bool isPremium;
+
+  const DashboardView({super.key, this.isPremium = false});
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +56,10 @@ class DashboardView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 25),
+          if (!isPremium) ...[
+            _buildPremiumBanner(),
+            const SizedBox(height: 25),
+          ],
           _buildUserCard(
             context,
             name: 'Maya Rodriguez',
@@ -74,6 +80,92 @@ class DashboardView extends StatelessWidget {
           ),
           const SizedBox(height: 100),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPremiumBanner() {
+    return Container(
+      padding: const EdgeInsets.all(2), 
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF7C3AED), Color(0xFFF472B6)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A0A35),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF7C3AED), Color(0xFFF472B6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Image.asset('images/Icon-infinity.png', width: 22, color: const Color.fromARGB(255, 0, 0, 0)),
+              ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Color(0xFFA672FF), Color(0xFFFF87C6)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ).createShader(bounds),
+                    child: Text(
+                      'Unlock More Features \nwith Premium!',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Get more people to swap with!',
+                    style: GoogleFonts.inter(
+                      color: Colors.grey[500],
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              width: 28,
+              height: 28,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF7C3AED), Color(0xFFF472B6)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.east, color: Color.fromARGB(255, 0, 0, 0), size: 12),
+            ),
+          ],
+        ),
       ),
     );
   }

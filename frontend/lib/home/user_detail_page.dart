@@ -52,7 +52,6 @@ class UserDetailPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 30),
                     padding: const EdgeInsets.all(25),
@@ -87,7 +86,6 @@ class UserDetailPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                         const Divider(),
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -96,7 +94,6 @@ class UserDetailPage extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 25),
-
                         _buildSectionHeader('images/skills.png', 'My Skills'),
                         const SizedBox(height: 10),
                         Align(
@@ -112,7 +109,6 @@ class UserDetailPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 25),
-
                         _buildSectionHeader('images/goals.png', 'Learning Goals'),
                         const SizedBox(height: 10),
                         Align(
@@ -128,7 +124,10 @@ class UserDetailPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 30),
-
+                        _buildSectionHeader('images/icon-certificate.png', 'Certificates'),
+                        const SizedBox(height: 15),
+                        const CertificateCarousel(),
+                        const SizedBox(height: 30),
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
@@ -168,7 +167,6 @@ class UserDetailPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 20),
-
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
@@ -283,6 +281,73 @@ class UserDetailPage extends StatelessWidget {
         label,
         style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
       ),
+    );
+  }
+}
+
+class CertificateCarousel extends StatefulWidget {
+  const CertificateCarousel({super.key});
+
+  @override
+  State<CertificateCarousel> createState() => _CertificateCarouselState();
+}
+
+class _CertificateCarouselState extends State<CertificateCarousel> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  final List<String> _certificates = [
+    'images/certificate1.png',
+    'images/certificate2.png',
+    'images/certificate3.png',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 180,
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (int page) {
+              setState(() {
+                _currentPage = page;
+              });
+            },
+            itemCount: _certificates.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: Image.asset(
+                    _certificates[index],
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            _certificates.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: _currentPage == index ? 24 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: _currentPage == index ? const Color(0xFF8A3CFE) : Colors.grey[300],
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
