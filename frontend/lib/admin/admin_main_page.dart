@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/admin/alert_page.dart';
 import 'package:frontend/theme/admin_colors.dart';
 import 'package:frontend/admin/user_management_page.dart';
 import 'package:frontend/admin/skill_management_page.dart';
@@ -17,16 +18,15 @@ class _AdminMainPageState extends State<AdminMainPage> {
   final List<Widget> _pages = [
     const UserManagementPage(), // Index 0
     const SkillManagementPage(), // Index 1
-    const Center(child: Text('Recent Alerts Page (Coming Soon)')), // Index 2 (Sementara)
+    const AlertPage(), // Index 2 
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Body akan berubah sesuai index yang sedang aktif
+      
       body: _pages[_selectedIndex], 
       
-      // Navbar-nya pindah ke sini
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(top: BorderSide(color: AdminColors.primaryPurple, width: 3)),
