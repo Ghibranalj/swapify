@@ -15,8 +15,13 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
   String selectedOffer = "";
   String selectedWant = "";
   final List<String> skills = ["Design Graphic", "React", "Flutter"];
+  bool _isNavigated = false; // Mencegah double pop
 
   void _showTopSnackBar() {
+    setState(() {
+      _isNavigated = false;
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
@@ -54,7 +59,7 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
                   Text(
                     'Your request to swap has been sent! Dont forget to check your messages from them.',
                     style: GoogleFonts.inter(
-                      color: Color(0XFF008A2E),
+                      color: const Color(0XFF008A2E),
                       fontSize: 12,
                       height: 1.3,
                     ),
@@ -62,14 +67,37 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
                 ],
               ),
             ),
+            TextButton(
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed: () {
+                if (!_isNavigated) {
+                  _isNavigated = true;
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
+              },
+              child: Text(
+                'Done',
+                style: GoogleFonts.inter(
+                  color: const Color(0XFF008A2E),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
+            ),
           ],
         ),
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4), 
       ),
     );
 
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted && !_isNavigated) {
+        _isNavigated = true;
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     });
@@ -163,7 +191,10 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
             ),
             const SizedBox(height: 30),
             GestureDetector(
-              onTap: _showTopSnackBar,
+              onTap: () {
+                // Hapus fungsi SharedPreferences dari sini
+                _showTopSnackBar();
+              },
               child: Container(
                 width: double.infinity,
                 height: 60,

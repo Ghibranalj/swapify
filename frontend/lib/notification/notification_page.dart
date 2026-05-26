@@ -1,8 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'notification_model.dart'; 
 
-class NotificationPage extends StatelessWidget {
+class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
+
+  @override
+  State<NotificationPage> createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
+  late Future<List<NotificationModel>> _notificationsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Memanggil fungsi fetch data saat halaman pertama kali diload
+    _notificationsFuture = fetchNotifications();
+  }
+
+  // --- FUTURE PROOFING ---
+  // Fungsi ini mensimulasikan pengambilan data dari API (Backend).
+  // Nanti kamu tinggal ganti isinya pakai http.get() atau dio.get()
+  Future<List<NotificationModel>> fetchNotifications() async {
+    await Future.delayed(const Duration(seconds: 1)); // Simulasi loading API 1 detik
+    
+    // Data dummy (Nanti didapat dari response JSON API)
+    return [
+      NotificationModel(
+        icon: Icons.notifications_none_outlined,
+        iconColor: const Color(0xFFF39C12),
+        iconBgColor: const Color(0xFFFDEBD0),
+        title: 'Maya Rodriguez sent you a swap request',
+        time: '2 hours ago',
+        hasBorder: true,
+        isUnread: true,
+      ),
+      NotificationModel(
+        icon: Icons.notifications_none_outlined,
+        iconColor: const Color(0xFF3498DB),
+        iconBgColor: const Color(0xFFD6EAF8),
+        title: 'Jordan Kim accepted your swap request',
+        time: '1 day ago',
+        hasBorder: true,
+        isUnread: false,
+      ),
+      NotificationModel(
+        icon: Icons.check_circle_outline,
+        iconColor: const Color(0xFF2ECC71),
+        iconBgColor: const Color(0xFFD5F5E3),
+        title: 'Maya Rodriguez sent you a swap request',
+        time: '3 days ago',
+        hasBorder: false,
+        isUnread: false,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,38 +86,46 @@ class NotificationPage extends StatelessWidget {
               ),
               const SizedBox(height: 30),
               Expanded(
-                child: ListView(
-                  children: [
-                    _buildNotificationCard(
-                      icon: Icons.notifications_none_outlined,
-                      iconColor: const Color(0xFFF39C12),
-                      iconBgColor: const Color(0xFFFDEBD0),
-                      title: 'Maya Rodriguez sent you a swap request',
-                      time: '2 hours ago',
-                      hasBorder: true,
-                      isUnread: true,
-                    ),
-                    const SizedBox(height: 15),
-                    _buildNotificationCard(
-                      icon: Icons.notifications_none_outlined,
-                      iconColor: const Color(0xFF3498DB),
-                      iconBgColor: const Color(0xFFD6EAF8),
-                      title: 'Jordan Kim accepted your swap request',
-                      time: '1 day ago',
-                      hasBorder: true,
-                      isUnread: false,
-                    ),
-                    const SizedBox(height: 15),
-                    _buildNotificationCard(
-                      icon: Icons.check_circle_outline,
-                      iconColor: const Color(0xFF2ECC71),
-                      iconBgColor: const Color(0xFFD5F5E3),
-                      title: 'Maya Rodriguez sent you a swap request',
-                      time: '3 days ago',
-                      hasBorder: false,
-                      isUnread: false,
-                    ),
-                  ],
+                // --- FUTURE BUILDER ---
+                // Mengatur state loading, error, dan success secara otomatis
+                child: FutureBuilder<List<NotificationModel>>(
+                  future: _notificationsFuture,
+                  builder: (context, snapshot) {
+                    // 1. Jika masih loading
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)));
+                    } 
+                    // 2. Jika ada error
+                    else if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    } 
+                    // 3. Jika data kosong
+                    else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(child: Text('No notifications yet.'));
+                    }
+
+                    // Data berhasil diload
+                    final notifications = snapshot.data!;
+
+                    // --- LISTVIEW BUILDER ---
+                    // Menggambar UI sesuai jumlah data secara dinamis
+                    return ListView.separated(
+                      itemCount: notifications.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 15),
+                      itemBuilder: (context, index) {
+                        final data = notifications[index];
+                        return _buildNotificationCard(
+                          icon: data.icon,
+                          iconColor: data.iconColor,
+                          iconBgColor: data.iconBgColor,
+                          title: data.title,
+                          time: data.time,
+                          hasBorder: data.hasBorder,
+                          isUnread: data.isUnread,
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],
@@ -74,6 +135,7 @@ class NotificationPage extends StatelessWidget {
     );
   }
 
+  // Widget card tetap dipertahankan
   Widget _buildNotificationCard({
     required IconData icon,
     required Color iconColor,

@@ -1,11 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'chat_model.dart';
 
-class ChatPage extends StatelessWidget {
+class ChatPage extends StatefulWidget {
   final String name;
   final String image;
 
   const ChatPage({super.key, required this.name, required this.image});
+
+  @override
+  State<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends State<ChatPage> {
+  late Future<List<ChatMessageModel>> _chatMessagesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatMessagesFuture = fetchChatMessages();
+  }
+
+  Future<List<ChatMessageModel>> fetchChatMessages() async {
+    await Future.delayed(const Duration(seconds: 1));
+    return [
+      ChatMessageModel(
+        id: '1',
+        text: "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa.",
+        isSender: false,
+      ),
+      ChatMessageModel(
+        id: '2',
+        text: "Lorem ipsum dolor sit amet.",
+        isSender: true,
+      ),
+      ChatMessageModel(
+        id: '3',
+        text: "Lorem ipsum?",
+        isSender: true,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +67,7 @@ class ChatPage extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 22,
-                      backgroundImage: AssetImage(image),
+                      backgroundImage: AssetImage(widget.image),
                     ),
                     Positioned(
                       right: 0,
@@ -55,7 +90,7 @@ class ChatPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        name,
+                        widget.name,
                         style: GoogleFonts.inter(
                           color: Colors.white,
                           fontSize: 18,
@@ -112,24 +147,32 @@ class ChatPage extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                _buildReceiverChat(
-                  image,
-                  "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa.",
-                ),
-                _buildSenderChat(
-                  image,
-                  "Lorem ipsum dolor sit amet.",
-                  "Read",
-                ),
-                _buildSenderChat(
-                  image,
-                  "Lorem ipsum?",
-                  "Delivered",
-                ),
-              ],
+            child: FutureBuilder<List<ChatMessageModel>>(
+              future: _chatMessagesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)));
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No messages here. Say hi!'));
+                }
+
+                final messages = snapshot.data!;
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = messages[index];
+                    if (msg.isSender) {
+                      return _buildSenderChat(widget.image, msg.text);
+                    } else {
+                      return _buildReceiverChat(widget.image, msg.text);
+                    }
+                  },
+                );
+              },
             ),
           ),
           Container(
@@ -250,47 +293,34 @@ class ChatPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSenderChat(String img, String message, String status) {
+  Widget _buildSenderChat(String img, String message) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              const SizedBox(width: 40),
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF7C3AED), Color(0xFF8B5CF6)],
-                    ),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      bottomLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
-                  ),
-                  child: Text(
-                    message,
-                    style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
-                  ),
+          const SizedBox(width: 40),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF7C3AED), Color(0xFF8B5CF6)],
+                ),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  bottomLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
                 ),
               ),
-              const SizedBox(width: 10),
-              CircleAvatar(radius: 18, backgroundImage: AssetImage(img)),
-            ],
-          ),
-          const SizedBox(height: 5),
-          Padding(
-            padding: const EdgeInsets.only(right: 45),
-            child: Text(
-              status,
-              style: GoogleFonts.inter(color: Colors.grey, fontSize: 11),
+              child: Text(
+                message,
+                style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+              ),
             ),
           ),
+          const SizedBox(width: 10),
+          CircleAvatar(radius: 18, backgroundImage: AssetImage(img)),
         ],
       ),
     );

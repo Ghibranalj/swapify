@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/home/dashboard_view.dart';
 import 'package:frontend/message/message_page.dart';
 import 'package:frontend/notification/notification_page.dart';
@@ -16,28 +18,66 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const DashboardView(), 
-    const RequestPage(),
-    const MessagePage(),
-    const NotificationPage(),
-    const ProfilePage(),
-  ];
+  String? _profileName;
+  String? _profileBio;
+  String? _profileImage;
+  int _certificatesCount = 0;
+  int _swapCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDataFromMemory();
+  }
+
+  Future<void> _loadDataFromMemory() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _profileName = prefs.getString('savedName');
+      _profileBio = prefs.getString('savedBio');
+      _profileImage = prefs.getString('savedImage');
+      final certs = prefs.getStringList('savedCertificates') ?? [];
+      _certificatesCount = certs.length;
+      _swapCount = prefs.getInt('swapCount') ?? 0;
+    });
+  }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+    // This makes sure your data is always fresh no matter which tab you click
+    _loadDataFromMemory(); 
+  }
+
+  // This replaces IndexedStack and forces the active page to rebuild
+  Widget _buildCurrentPage() {
+    switch (_selectedIndex) {
+      case 0:
+        return DashboardView(
+          savedName: _profileName,
+          savedBio: _profileBio,
+          savedImage: _profileImage,
+          certificatesCount: _certificatesCount,
+        );
+      case 1:
+        return const RequestPage();
+      case 2:
+        return const MessagePage();
+      case 3:
+        return const NotificationPage();
+      case 4:
+        return ProfilePage(swapCount: _swapCount); 
+      default:
+        return const SizedBox.shrink();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FF), 
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      backgroundColor: const Color(0xFFF6F7FF),
+      body: _buildCurrentPage(), // Calls the method we created above
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

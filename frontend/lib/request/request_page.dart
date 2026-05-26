@@ -1,24 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/message/chat_page.dart'; 
-
-class RequestItem {
-  final String name;
-  final String date;
-  final String skill1;
-  final String skill2;
-  final String message;
-  String tabType;
-
-  RequestItem({
-    required this.name,
-    required this.date,
-    required this.skill1,
-    required this.skill2,
-    required this.message,
-    required this.tabType,
-  });
-}
+import 'package:shared_preferences/shared_preferences.dart'; 
+import 'package:frontend/request/request_data.dart';
 
 class RequestPage extends StatefulWidget {
   const RequestPage({super.key});
@@ -29,33 +13,6 @@ class RequestPage extends StatefulWidget {
 
 class _RequestPageState extends State<RequestPage> {
   int _selectedTab = 0;
-
-  final List<RequestItem> _requests = [
-    RequestItem(
-      name: "Maya Rodriguez",
-      date: "03/03/2026",
-      skill1: "Spanish",
-      skill2: "UI/UX Design",
-      message: "Hey! I'd love to learn UI/UX from you. I can teach you Spanish in exchange! 😊",
-      tabType: "pending",
-    ),
-    RequestItem(
-      name: "Alex Chen",
-      date: "03/01/2026",
-      skill1: "React",
-      skill2: "Italian Cooking",
-      message: "I'd love to learn cooking from you!",
-      tabType: "active",
-    ),
-    RequestItem(
-      name: "Sarah Jenkins",
-      date: "25/02/2026",
-      skill1: "UI/UX Design",
-      skill2: "Photography",
-      message: "Let's learn from each other! 📸",
-      tabType: "done",
-    ),
-  ];
 
   void _showSuccessSnackBar(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -231,17 +188,18 @@ class _RequestPageState extends State<RequestPage> {
 
   @override
   Widget build(BuildContext context) {
-    int pendingCount = _requests.where((r) => r.tabType == "pending").length;
-    int activeCount = _requests.where((r) => r.tabType == "active").length;
-    int doneCount = _requests.where((r) => r.tabType == "done").length;
+    // Reading directly from global dummyRequests
+    int pendingCount = dummyRequests.where((r) => r.tabType == "pending").length;
+    int activeCount = dummyRequests.where((r) => r.tabType == "active").length;
+    int doneCount = dummyRequests.where((r) => r.tabType == "done").length;
 
     List<RequestItem> filteredRequests = [];
     if (_selectedTab == 0) {
-      filteredRequests = _requests.where((r) => r.tabType == "pending").toList();
+      filteredRequests = dummyRequests.where((r) => r.tabType == "pending").toList();
     } else if (_selectedTab == 1) {
-      filteredRequests = _requests.where((r) => r.tabType == "active").toList();
+      filteredRequests = dummyRequests.where((r) => r.tabType == "active").toList();
     } else {
-      filteredRequests = _requests.where((r) => r.tabType == "done").toList();
+      filteredRequests = dummyRequests.where((r) => r.tabType == "done").toList();
     }
 
     return Scaffold(
@@ -465,11 +423,14 @@ class _RequestPageState extends State<RequestPage> {
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   setState(() {
                     request.tabType = "done";
-                    _selectedTab = 2;
+                    _selectedTab = 2; // Auto-shift to the Complete ("Done") Tab
                   });
+                  final prefs = await SharedPreferences.getInstance();
+                  int currentSwapCount = prefs.getInt('swapCount') ?? 0; // Ambil nilai sekarang, default 0
+                  await prefs.setInt('swapCount', currentSwapCount + 1); // Simpan nilai baru (+1)
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF06B6D4),
@@ -500,7 +461,7 @@ class _RequestPageState extends State<RequestPage> {
                         _showSuccessSnackBar(context);
                         setState(() {
                           request.tabType = "active";
-                          _selectedTab = 1;
+                          _selectedTab = 1; // Auto-shift to Active Tab
                         });
                       },
                       icon: const Icon(Icons.check, size: 20),
@@ -523,7 +484,7 @@ class _RequestPageState extends State<RequestPage> {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         setState(() {
-                          _requests.remove(request);
+                          dummyRequests.remove(request);
                         });
                       },
                       icon: const Icon(Icons.close, size: 20),

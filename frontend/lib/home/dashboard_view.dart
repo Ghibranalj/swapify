@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'user_detail_page.dart'; 
+import 'user_detail_page.dart';
 
 class DashboardView extends StatelessWidget {
   final bool isPremium;
+  final String? savedName;
+  final String? savedBio;
+  final String? savedImage;
+  final int certificatesCount;
 
-  const DashboardView({super.key, this.isPremium = false});
+  const DashboardView({
+    super.key,
+    this.isPremium = false,
+    this.savedName,
+    this.savedBio,
+    this.savedImage,
+    this.certificatesCount = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -60,13 +71,25 @@ class DashboardView extends StatelessWidget {
             _buildPremiumBanner(),
             const SizedBox(height: 25),
           ],
+          if (savedName != null && savedName!.isNotEmpty) ...[
+            _buildUserCard(
+              context,
+              name: savedName!,
+              rating: '5.0',
+              swaps: '0',
+              imageAsset: savedImage ?? 'images/user1.png',
+              skills: [savedBio ?? 'New Member', 'Certificate ($certificatesCount)'],
+              moreSkills: 'Verified',
+              isLocalAsset: savedImage != null ? false : true,
+            ),
+          ],
           _buildUserCard(
             context,
             name: 'Maya Rodriguez',
             rating: '4.8',
             swaps: '18',
             imageAsset: 'images/user1.png',
-            skills: ['Spanish', 'Guitar'],
+            skills: const ['Spanish', 'Guitar'],
             moreSkills: '+1',
           ),
           _buildUserCard(
@@ -75,7 +98,7 @@ class DashboardView extends StatelessWidget {
             rating: '4.7',
             swaps: '14',
             imageAsset: 'images/user2.png',
-            skills: ['Web Development', 'Python'],
+            skills: const ['Web Development', 'Python'],
             moreSkills: '+1',
           ),
           const SizedBox(height: 100),
@@ -86,7 +109,7 @@ class DashboardView extends StatelessWidget {
 
   Widget _buildPremiumBanner() {
     return Container(
-      padding: const EdgeInsets.all(2), 
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF7C3AED), Color(0xFFF472B6)],
@@ -185,7 +208,7 @@ class DashboardView extends StatelessWidget {
           color: isSelected ? Colors.white : Colors.grey[800],
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           fontSize: 14,
-        ),
+         ),
       ),
     );
   }
@@ -198,6 +221,7 @@ class DashboardView extends StatelessWidget {
     required String imageAsset,
     required List<String> skills,
     required String moreSkills,
+    bool isLocalAsset = true,
   }) {
     return GestureDetector(
       onTap: () {
@@ -221,7 +245,13 @@ class DashboardView extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(radius: 35, backgroundColor: Colors.grey[200], backgroundImage: AssetImage(imageAsset)),
+            CircleAvatar(
+              radius: 35,
+              backgroundColor: Colors.grey[200],
+              backgroundImage: isLocalAsset 
+                  ? AssetImage(imageAsset) as ImageProvider
+                  : NetworkImage(imageAsset),
+            ),
             const SizedBox(width: 15),
             Expanded(
               child: Column(

@@ -1,9 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'chat_model.dart';
 import 'chat_page.dart';
 
-class MessagePage extends StatelessWidget {
+class MessagePage extends StatefulWidget {
   const MessagePage({super.key});
+
+  @override
+  State<MessagePage> createState() => _MessagePageState();
+}
+
+class _MessagePageState extends State<MessagePage> {
+  late Future<List<ChatThreadModel>> _chatThreadsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _chatThreadsFuture = fetchChatThreads();
+  }
+
+  Future<List<ChatThreadModel>> fetchChatThreads() async {
+    await Future.delayed(const Duration(seconds: 1));
+    return [
+      ChatThreadModel(
+        id: '1',
+        name: 'Maya Rodriguez',
+        lastMessage: 'Saturday at 2pm?',
+        time: '6h ago',
+        image: 'images/user1.png',
+        unreadCount: '1',
+        isOnline: true,
+      ),
+      ChatThreadModel(
+        id: '2',
+        name: 'Alex Chen',
+        lastMessage: 'Lorem ipsum dolor sit...',
+        time: '6h ago',
+        image: 'images/user2.png',
+        unreadCount: '1',
+        isOnline: true,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,29 +151,37 @@ class MessagePage extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(25),
-              children: [
-                _buildChatTile(
-                  context,
-                  name: 'Maya Rodriguez',
-                  message: 'Saturday at 2pm?',
-                  time: '6h ago',
-                  image: 'images/user1.png',
-                  unreadCount: '1',
-                  isOnline: true,
-                ),
-                const SizedBox(height: 15),
-                _buildChatTile(
-                  context,
-                  name: 'Alex Chen',
-                  message: 'Lorem ipsum dolor sit...',
-                  time: '6h ago',
-                  image: 'images/user2.png',
-                  unreadCount: '1',
-                  isOnline: true,
-                ),
-              ],
+            child: FutureBuilder<List<ChatThreadModel>>(
+              future: _chatThreadsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)));
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No messages yet.'));
+                }
+
+                final threads = snapshot.data!;
+
+                return ListView.separated(
+                  padding: const EdgeInsets.all(25),
+                  itemCount: threads.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 15),
+                  itemBuilder: (context, index) {
+                    final chat = threads[index];
+                    return _buildChatTile(
+                      context,
+                      name: chat.name,
+                      message: chat.lastMessage,
+                      time: chat.time,
+                      image: chat.image,
+                      unreadCount: chat.unreadCount,
+                      isOnline: chat.isOnline,
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
