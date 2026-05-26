@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
 import 'package:frontend/admin/admin_main_page.dart';
-=======
 import 'package:frontend/checkout/checkout_page.dart';
->>>>>>> f7757c8 (feat: users page)
 import 'package:frontend/home/home_page.dart';
 import 'package:frontend/login/setUpProfile_page.dart';
 import 'package:frontend/login/uploadcertificate_page.dart';
@@ -29,11 +26,8 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         textTheme: GoogleFonts.interTextTheme()
       ),
-<<<<<<< HEAD
-      home: const AdminMainPage(), // Ganti dengan Splash
-=======
-      home: const SetUpProfilePage(), 
->>>>>>> f7757c8 (feat: users page)
+      home: const SetUpProfilePage(), // Ganti dengan Splash
+
     );
   }
 }

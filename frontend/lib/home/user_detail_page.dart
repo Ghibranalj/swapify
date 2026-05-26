@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'request_swap_page.dart';
+import 'user_model.dart'; 
 
 class UserDetailPage extends StatelessWidget {
-  final String name;
-  final String imageAsset;
+  final UserModel user; 
 
   const UserDetailPage({
     super.key,
-    required this.name,
-    required this.imageAsset,
+    required this.user,
   });
 
   @override
@@ -71,28 +70,32 @@ class UserDetailPage extends StatelessWidget {
                       children: [
                         CircleAvatar(
                           radius: 60,
-                          backgroundImage: AssetImage(imageAsset),
+                          backgroundImage: AssetImage(user.imageAsset),
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          name,
+                          user.name,
                           style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w900),
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'Design enthusiast and coding newbie. Let\'s swap skills!',
+                          user.bio, 
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(color: Colors.grey, fontSize: 14),
                         ),
                         const SizedBox(height: 20),
                         const Divider(),
+                        const SizedBox(height: 10),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildStatIcon(Icons.star, '4.8', Colors.orange),
-                            _buildStatImage('images/swap.png', '18 Swaps'),
+                            _buildStatIcon(Icons.star, user.rating, Colors.orange),
+                            const SizedBox(width: 40),
+                            _buildStatImage('images/swap.png', '${user.swaps} Swaps'),
                           ],
                         ),
+                        const SizedBox(height: 10),
+                        const Divider(),
                         const SizedBox(height: 25),
                         _buildSectionHeader('images/skills.png', 'My Skills'),
                         const SizedBox(height: 10),
@@ -101,11 +104,7 @@ class UserDetailPage extends StatelessWidget {
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 8,
-                            children: [
-                              _buildGradientChip('Spanish'),
-                              _buildGradientChip('Guitar'),
-                              _buildGradientChip('Singing'),
-                            ],
+                            children: user.skills.map((skill) => _buildGradientChip(skill)).toList(), 
                           ),
                         ),
                         const SizedBox(height: 25),
@@ -116,17 +115,13 @@ class UserDetailPage extends StatelessWidget {
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 8,
-                            children: [
-                              _buildCyanChip('UI/UX Design'),
-                              _buildCyanChip('Photography'),
-                              _buildCyanChip('Video Editing'),
-                            ],
+                            children: user.learningGoals.map((goal) => _buildCyanChip(goal)).toList(), 
                           ),
                         ),
                         const SizedBox(height: 30),
                         _buildSectionHeader('images/icon-certificate.png', 'Certificates'),
                         const SizedBox(height: 15),
-                        const CertificateCarousel(),
+                        CertificateCarousel(certificates: user.certificates),
                         const SizedBox(height: 30),
                         GestureDetector(
                           onTap: () {
@@ -134,8 +129,8 @@ class UserDetailPage extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => RequestSwapPage(
-                                  name: name,
-                                  imageAsset: imageAsset,
+                                  name: user.name,
+                                  imageAsset: user.imageAsset,
                                 ),
                               ),
                             );
@@ -161,7 +156,7 @@ class UserDetailPage extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Image.asset('images/sparkle.png', width: 20, height: 20),
+                                Image.asset('images/sparkle.png', width: 20, height: 20, errorBuilder: (c,e,s) => const Icon(Icons.bolt, color: Colors.white)),
                               ],
                             ),
                           ),
@@ -237,7 +232,7 @@ class UserDetailPage extends StatelessWidget {
   Widget _buildStatImage(String assetPath, String text) {
     return Row(
       children: [
-        Image.asset(assetPath, width: 24, height: 24),
+        Image.asset(assetPath, width: 24, height: 24, errorBuilder: (c,e,s) => const Icon(Icons.sync_alt, size: 20, color: Colors.grey)),
         const SizedBox(width: 8),
         Text(text, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
       ],
@@ -247,7 +242,7 @@ class UserDetailPage extends StatelessWidget {
   Widget _buildSectionHeader(String assetPath, String title) {
     return Row(
       children: [
-        Image.asset(assetPath, width: 22, height: 22),
+        Image.asset(assetPath, width: 22, height: 22, errorBuilder: (c,e,s) => const Icon(Icons.label_important, size: 20, color: Colors.purple)),
         const SizedBox(width: 10),
         Text(title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18)),
       ],
@@ -286,7 +281,9 @@ class UserDetailPage extends StatelessWidget {
 }
 
 class CertificateCarousel extends StatefulWidget {
-  const CertificateCarousel({super.key});
+  final List<String> certificates; 
+
+  const CertificateCarousel({super.key, required this.certificates});
 
   @override
   State<CertificateCarousel> createState() => _CertificateCarouselState();
@@ -296,14 +293,15 @@ class _CertificateCarouselState extends State<CertificateCarousel> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<String> _certificates = [
-    'images/certificate1.png',
-    'images/certificate2.png',
-    'images/certificate3.png',
-  ];
-
   @override
   Widget build(BuildContext context) {
+    if (widget.certificates.isEmpty) {
+      return const SizedBox(
+        height: 50,
+        child: Center(child: Text('No certificates uploaded yet.', style: TextStyle(color: Colors.grey))),
+      );
+    }
+
     return Column(
       children: [
         SizedBox(
@@ -315,15 +313,19 @@ class _CertificateCarouselState extends State<CertificateCarousel> {
                 _currentPage = page;
               });
             },
-            itemCount: _certificates.length,
+            itemCount: widget.certificates.length,
             itemBuilder: (context, index) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2.0),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(15),
                   child: Image.asset(
-                    _certificates[index],
+                    widget.certificates[index],
                     fit: BoxFit.cover,
+                    errorBuilder: (c, e, s) => Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.card_membership, size: 40, color: Colors.grey),
+                    ),
                   ),
                 ),
               );
@@ -334,7 +336,7 @@ class _CertificateCarouselState extends State<CertificateCarousel> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
-            _certificates.length,
+            widget.certificates.length,
             (index) => AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               margin: const EdgeInsets.symmetric(horizontal: 4),

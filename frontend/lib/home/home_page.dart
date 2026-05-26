@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/home/dashboard_view.dart';
@@ -17,11 +18,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-
-  String? _profileName;
-  String? _profileBio;
-  String? _profileImage;
-  int _certificatesCount = 0;
   int _swapCount = 0;
 
   @override
@@ -33,11 +29,6 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadDataFromMemory() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _profileName = prefs.getString('savedName');
-      _profileBio = prefs.getString('savedBio');
-      _profileImage = prefs.getString('savedImage');
-      final certs = prefs.getStringList('savedCertificates') ?? [];
-      _certificatesCount = certs.length;
       _swapCount = prefs.getInt('swapCount') ?? 0;
     });
   }
@@ -46,20 +37,13 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedIndex = index;
     });
-    // This makes sure your data is always fresh no matter which tab you click
     _loadDataFromMemory(); 
   }
 
-  // This replaces IndexedStack and forces the active page to rebuild
   Widget _buildCurrentPage() {
     switch (_selectedIndex) {
       case 0:
-        return DashboardView(
-          savedName: _profileName,
-          savedBio: _profileBio,
-          savedImage: _profileImage,
-          certificatesCount: _certificatesCount,
-        );
+        return const DashboardView(); 
       case 1:
         return const RequestPage();
       case 2:
@@ -77,7 +61,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7FF),
-      body: _buildCurrentPage(), // Calls the method we created above
+      body: _buildCurrentPage(), 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

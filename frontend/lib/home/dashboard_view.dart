@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'user_detail_page.dart';
+import 'user_model.dart';
 
-class DashboardView extends StatelessWidget {
+class DashboardView extends StatefulWidget {
   final bool isPremium;
-  final String? savedName;
-  final String? savedBio;
-  final String? savedImage;
-  final int certificatesCount;
 
   const DashboardView({
     super.key,
-    this.isPremium = false,
-    this.savedName,
-    this.savedBio,
-    this.savedImage,
-    this.certificatesCount = 0,
+    this.isPremium = false, // Sesuai request, default-nya false
   });
 
   @override
+  State<DashboardView> createState() => _DashboardViewState();
+}
+
+class _DashboardViewState extends State<DashboardView> {
+  String _selectedCategory = 'All';
+
+  @override
   Widget build(BuildContext context) {
+    // Logika Filtering Backend-Friendly
+    final filteredUsers = _selectedCategory == 'All'
+        ? dummyUsers
+        : dummyUsers.where((user) => user.categories.contains(_selectedCategory)).toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -53,54 +58,38 @@ class DashboardView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
+          
+          // Filter Horizontal Bar
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: [
-                _buildFilterTag('All', true),
-                _buildFilterTag('Design', false),
-                _buildFilterTag('Coding', false),
-                _buildFilterTag('Language', false),
-                _buildFilterTag('Music', false),
-                _buildFilterTag('Art', false),
-              ],
+              children: ['All', 'Design', 'Coding', 'Language', 'Music', 'Art'].map((category) {
+                return _buildFilterTag(category, _selectedCategory == category);
+              }).toList(),
             ),
           ),
           const SizedBox(height: 25),
-          if (!isPremium) ...[
+          
+          // Kondisi Premium Banner
+          if (!widget.isPremium) ...[
             _buildPremiumBanner(),
             const SizedBox(height: 25),
           ],
-          if (savedName != null && savedName!.isNotEmpty) ...[
-            _buildUserCard(
-              context,
-              name: savedName!,
-              rating: '5.0',
-              swaps: '0',
-              imageAsset: savedImage ?? 'images/user1.png',
-              skills: [savedBio ?? 'New Member', 'Certificate ($certificatesCount)'],
-              moreSkills: 'Verified',
-              isLocalAsset: savedImage != null ? false : true,
-            ),
-          ],
-          _buildUserCard(
-            context,
-            name: 'Maya Rodriguez',
-            rating: '4.8',
-            swaps: '18',
-            imageAsset: 'images/user1.png',
-            skills: const ['Spanish', 'Guitar'],
-            moreSkills: '+1',
-          ),
-          _buildUserCard(
-            context,
-            name: 'Jordan Kim',
-            rating: '4.7',
-            swaps: '14',
-            imageAsset: 'images/user2.png',
-            skills: const ['Web Development', 'Python'],
-            moreSkills: '+1',
-          ),
+          
+          // List Card User Dinamis Berdasarkan Filter
+          if (filteredUsers.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 40),
+                child: Text(
+                  'No partners found in this category.',
+                  style: GoogleFonts.inter(color: Colors.grey),
+                ),
+              ),
+            )
+          else
+            ...filteredUsers.map((user) => _buildUserCard(context, user: user)).toList(),
+            
           const SizedBox(height: 100),
         ],
       ),
@@ -138,7 +127,7 @@ class DashboardView extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Center(
-                child: Image.asset('images/Icon-infinity.png', width: 22, color: const Color.fromARGB(255, 0, 0, 0)),
+                child: Image.asset('images/Icon-infinity.png', width: 22, color: Colors.black, errorBuilder: (c, e, s) => const Icon(Icons.all_inclusive, color: Colors.white)),
               ),
             ),
             const SizedBox(width: 15),
@@ -185,7 +174,7 @@ class DashboardView extends StatelessWidget {
                 ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.east, color: Color.fromARGB(255, 0, 0, 0), size: 12),
+              child: const Icon(Icons.east, color: Colors.black, size: 12),
             ),
           ],
         ),
@@ -194,41 +183,39 @@ class DashboardView extends StatelessWidget {
   }
 
   Widget _buildFilterTag(String label, bool isSelected) {
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF7C3AED) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isSelected ? const Color(0xFF7C3AED) : Colors.grey[200]!),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          color: isSelected ? Colors.white : Colors.grey[800],
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-          fontSize: 14,
-         ),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedCategory = label;
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF7C3AED) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? const Color(0xFF7C3AED) : Colors.grey[200]!),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            color: isSelected ? Colors.white : Colors.grey[800],
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            fontSize: 14,
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildUserCard(
-    BuildContext context, {
-    required String name,
-    required String rating,
-    required String swaps,
-    required String imageAsset,
-    required List<String> skills,
-    required String moreSkills,
-    bool isLocalAsset = true,
-  }) {
+  Widget _buildUserCard(BuildContext context, {required UserModel user}) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => UserDetailPage(name: name, imageAsset: imageAsset),
+            builder: (context) => UserDetailPage(user: user), // Melempar seluruh objek user
           ),
         );
       },
@@ -248,9 +235,7 @@ class DashboardView extends StatelessWidget {
             CircleAvatar(
               radius: 35,
               backgroundColor: Colors.grey[200],
-              backgroundImage: isLocalAsset 
-                  ? AssetImage(imageAsset) as ImageProvider
-                  : NetworkImage(imageAsset),
+              backgroundImage: AssetImage(user.imageAsset),
             ),
             const SizedBox(width: 15),
             Expanded(
@@ -258,7 +243,7 @@ class DashboardView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    user.name,
                     style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF2D2E4E)),
                   ),
                   const SizedBox(height: 4),
@@ -266,15 +251,17 @@ class DashboardView extends StatelessWidget {
                     children: [
                       const Icon(Icons.star, color: Colors.orange, size: 18),
                       const SizedBox(width: 4),
-                      Text(rating, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.grey[800])),
-                      Text(' · $swaps swaps', style: GoogleFonts.inter(color: Colors.grey[600])),
+                      Text(user.rating, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.grey[800])),
+                      Text(' · ${user.swaps} swaps', style: GoogleFonts.inter(color: Colors.grey[600])),
                     ],
                   ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      ...skills.map((skill) => _buildSkillTag(skill)).toList(),
-                      _buildMoreSkillsTag(moreSkills),
+                      // Batasi maksimal display 2 tag di card utama, sisanya jadi "+X"
+                      ...user.skills.take(2).map((skill) => _buildSkillTag(skill)).toList(),
+                      if (user.skills.length > 2)
+                        _buildMoreSkillsTag('+${user.skills.length - 2}'),
                     ],
                   ),
                 ],

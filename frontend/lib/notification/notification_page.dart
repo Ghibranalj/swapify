@@ -15,17 +15,15 @@ class _NotificationPageState extends State<NotificationPage> {
   @override
   void initState() {
     super.initState();
-    // Memanggil fungsi fetch data saat halaman pertama kali diload
     _notificationsFuture = fetchNotifications();
   }
 
   // --- FUTURE PROOFING ---
-  // Fungsi ini mensimulasikan pengambilan data dari API (Backend).
-  // Nanti kamu tinggal ganti isinya pakai http.get() atau dio.get()
+
   Future<List<NotificationModel>> fetchNotifications() async {
-    await Future.delayed(const Duration(seconds: 1)); // Simulasi loading API 1 detik
+    await Future.delayed(const Duration(seconds: 1)); 
     
-    // Data dummy (Nanti didapat dari response JSON API)
+    // Data dummy
     return [
       NotificationModel(
         icon: Icons.notifications_none_outlined,
@@ -86,29 +84,20 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
               const SizedBox(height: 30),
               Expanded(
-                // --- FUTURE BUILDER ---
-                // Mengatur state loading, error, dan success secara otomatis
                 child: FutureBuilder<List<NotificationModel>>(
                   future: _notificationsFuture,
                   builder: (context, snapshot) {
-                    // 1. Jika masih loading
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)));
                     } 
-                    // 2. Jika ada error
                     else if (snapshot.hasError) {
                       return Center(child: Text('Error: ${snapshot.error}'));
                     } 
-                    // 3. Jika data kosong
                     else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return const Center(child: Text('No notifications yet.'));
                     }
-
-                    // Data berhasil diload
                     final notifications = snapshot.data!;
 
-                    // --- LISTVIEW BUILDER ---
-                    // Menggambar UI sesuai jumlah data secara dinamis
                     return ListView.separated(
                       itemCount: notifications.length,
                       separatorBuilder: (context, index) => const SizedBox(height: 15),
@@ -135,7 +124,6 @@ class _NotificationPageState extends State<NotificationPage> {
     );
   }
 
-  // Widget card tetap dipertahankan
   Widget _buildNotificationCard({
     required IconData icon,
     required Color iconColor,
