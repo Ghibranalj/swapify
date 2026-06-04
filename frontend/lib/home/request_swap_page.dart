@@ -15,7 +15,7 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
   String selectedOffer = "";
   String selectedWant = "";
   final List<String> skills = ["Design Graphic", "React", "Flutter"];
-  bool _isNavigated = false; // Mencegah double pop
+  bool _isNavigated = false; 
 
   void _showTopSnackBar() {
     setState(() {
@@ -192,7 +192,6 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
             const SizedBox(height: 30),
             GestureDetector(
               onTap: () {
-                // Hapus fungsi SharedPreferences dari sini
                 _showTopSnackBar();
               },
               child: Container(

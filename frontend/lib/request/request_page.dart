@@ -188,7 +188,6 @@ class _RequestPageState extends State<RequestPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Reading directly from global dummyRequests
     int pendingCount = dummyRequests.where((r) => r.tabType == "pending").length;
     int activeCount = dummyRequests.where((r) => r.tabType == "active").length;
     int doneCount = dummyRequests.where((r) => r.tabType == "done").length;
@@ -426,11 +425,11 @@ class _RequestPageState extends State<RequestPage> {
                 onPressed: () async {
                   setState(() {
                     request.tabType = "done";
-                    _selectedTab = 2; // Auto-shift to the Complete ("Done") Tab
+                    _selectedTab = 2; 
                   });
                   final prefs = await SharedPreferences.getInstance();
-                  int currentSwapCount = prefs.getInt('swapCount') ?? 0; // Ambil nilai sekarang, default 0
-                  await prefs.setInt('swapCount', currentSwapCount + 1); // Simpan nilai baru (+1)
+                  int currentSwapCount = prefs.getInt('swapCount') ?? 0; 
+                  await prefs.setInt('swapCount', currentSwapCount + 1); 
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF06B6D4),
@@ -461,7 +460,7 @@ class _RequestPageState extends State<RequestPage> {
                         _showSuccessSnackBar(context);
                         setState(() {
                           request.tabType = "active";
-                          _selectedTab = 1; // Auto-shift to Active Tab
+                          _selectedTab = 1; 
                         });
                       },
                       icon: const Icon(Icons.check, size: 20),

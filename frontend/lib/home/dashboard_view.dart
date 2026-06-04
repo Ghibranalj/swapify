@@ -215,7 +215,7 @@ class _DashboardViewState extends State<DashboardView> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => UserDetailPage(user: user), // Melempar seluruh objek user
+            builder: (context) => UserDetailPage(user: user), 
           ),
         );
       },

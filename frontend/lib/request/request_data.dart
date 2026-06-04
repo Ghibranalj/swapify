@@ -1,4 +1,3 @@
-// lib/data/request_data.dart
 
 class RequestItem {
   final String name;
@@ -18,7 +17,6 @@ class RequestItem {
   });
 }
 
-// Global list that persists throughout the application session
 List<RequestItem> dummyRequests = [
   RequestItem(
     name: "Maya Rodriguez",
