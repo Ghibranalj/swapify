@@ -1,45 +1,115 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'chat_model.dart';
+import 'package:frontend/services/api_service.dart';
+import 'package:frontend/services/api_config.dart';
 
 class ChatPage extends StatefulWidget {
   final String name;
   final String image;
+  final String swapRequestId;
 
-  const ChatPage({super.key, required this.name, required this.image});
+  const ChatPage({
+    super.key,
+    required this.name,
+    required this.image,
+    this.swapRequestId = '',
+  });
 
   @override
   State<ChatPage> createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
-  late Future<List<ChatMessageModel>> _chatMessagesFuture;
+  List<ChatMessageModel> _messages = [];
+  bool _isLoading = true;
+  bool _isSending = false;
+  final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _chatMessagesFuture = fetchChatMessages();
+    _loadMessages();
   }
 
-  Future<List<ChatMessageModel>> fetchChatMessages() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return [
-      ChatMessageModel(
-        id: '1',
-        text: "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa.",
-        isSender: false,
-      ),
-      ChatMessageModel(
-        id: '2',
-        text: "Lorem ipsum dolor sit amet.",
-        isSender: true,
-      ),
-      ChatMessageModel(
-        id: '3',
-        text: "Lorem ipsum?",
-        isSender: true,
-      ),
-    ];
+  @override
+  void dispose() {
+    _controller.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadMessages() async {
+    if (widget.swapRequestId.isEmpty) {
+      setState(() => _isLoading = false);
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      final msgs = await ApiService().getMessages(widget.swapRequestId);
+      final myId = ApiService().currentUser?['id'];
+      setState(() {
+        _messages = msgs.map((m) {
+          return ChatMessageModel(
+            id: m['id'] ?? '',
+            text: m['content'] ?? '',
+            isSender: m['senderId'] == myId,
+          );
+        }).toList();
+        _isLoading = false;
+      });
+      _scrollToBottom();
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || widget.swapRequestId.isEmpty) return;
+
+    _controller.clear();
+    setState(() {
+      _messages.add(ChatMessageModel(id: 'temp', text: text, isSender: true));
+      _isSending = true;
+    });
+    _scrollToBottom();
+
+    try {
+      await ApiService().sendMessage(widget.swapRequestId, text);
+      _isSending = false;
+    } catch (e) {
+      setState(() => _isSending = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send message: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  ImageProvider _getAvatarImage() {
+    final img = widget.image;
+    if (img.startsWith('http')) return NetworkImage(img);
+    if (img.isNotEmpty) {
+      try {
+        return AssetImage(img);
+      } catch (_) {}
+    }
+    return const AssetImage('images/user1.png');
   }
 
   @override
@@ -48,6 +118,7 @@ class _ChatPageState extends State<ChatPage> {
       backgroundColor: const Color(0xFFF6F7FF),
       body: Column(
         children: [
+          // App Bar
           Container(
             padding: const EdgeInsets.only(top: 50, left: 10, right: 20, bottom: 20),
             decoration: const BoxDecoration(
@@ -67,7 +138,7 @@ class _ChatPageState extends State<ChatPage> {
                   children: [
                     CircleAvatar(
                       radius: 22,
-                      backgroundImage: AssetImage(widget.image),
+                      backgroundImage: _getAvatarImage(),
                     ),
                     Positioned(
                       right: 0,
@@ -89,36 +160,17 @@ class _ChatPageState extends State<ChatPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.name,
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Active Now',
-                        style: GoogleFonts.inter(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 12,
-                        ),
-                      ),
+                      Text(widget.name, style: GoogleFonts.inter(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      Text('Active Now', style: GoogleFonts.inter(color: Colors.white.withOpacity(0.8), fontSize: 12)),
                     ],
                   ),
                 ),
                 Theme(
-                  data: Theme.of(context).copyWith(
-                    hoverColor: Colors.transparent,
-                    splashColor: Colors.transparent,
-                  ),
+                  data: Theme.of(context).copyWith(hoverColor: Colors.transparent, splashColor: Colors.transparent),
                   child: PopupMenuButton<String>(
                     icon: Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), shape: BoxShape.circle),
                       child: const Icon(Icons.more_vert, color: Colors.white),
                     ),
                     color: Colors.white.withOpacity(0.9),
@@ -127,54 +179,55 @@ class _ChatPageState extends State<ChatPage> {
                     constraints: const BoxConstraints(maxWidth: 180),
                     itemBuilder: (context) => [
                       PopupMenuItem(
-                        value: 'delete',
+                        value: 'refresh',
                         height: 45,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Delete conversation',
-                              style: GoogleFonts.inter(color: Colors.red, fontSize: 14),
-                            ),
-                            const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                            Text('Refresh', style: GoogleFonts.inter(color: Colors.black87, fontSize: 14)),
+                            const Icon(Icons.refresh, color: Colors.black87, size: 20),
                           ],
                         ),
                       ),
                     ],
+                    onSelected: (val) {
+                      if (val == 'refresh') _loadMessages();
+                    },
                   ),
                 ),
               ],
             ),
           ),
+
+          // Messages
           Expanded(
-            child: FutureBuilder<List<ChatMessageModel>>(
-              future: _chatMessagesFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)));
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('No messages here. Say hi!'));
-                }
-
-                final messages = snapshot.data!;
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = messages[index];
-                    if (msg.isSender) {
-                      return _buildSenderChat(widget.image, msg.text);
-                    } else {
-                      return _buildReceiverChat(widget.image, msg.text);
-                    }
-                  },
-                );
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
+                : _messages.isEmpty
+                    ? Center(
+                        child: Text(
+                          widget.swapRequestId.isEmpty
+                              ? 'Chat unavailable. No swap request ID.'
+                              : 'No messages yet. Say hi!',
+                          style: GoogleFonts.inter(color: Colors.grey),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(20),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final msg = _messages[index];
+                          if (msg.isSender) {
+                            return _buildSenderChat(msg.text);
+                          } else {
+                            return _buildReceiverChat(msg.text);
+                          }
+                        },
+                      ),
           ),
+
+          // Input Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             decoration: const BoxDecoration(
@@ -183,52 +236,39 @@ class _ChatPageState extends State<ChatPage> {
             ),
             child: Row(
               children: [
-                Theme(
-                  data: Theme.of(context).copyWith(
-                    hoverColor: Colors.transparent,
-                    splashColor: Colors.transparent,
-                  ),
-                  child: PopupMenuButton<String>(
-                    offset: const Offset(0, -245),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                    color: Colors.white,
-                    elevation: 8,
-                    constraints: const BoxConstraints(
-                      minWidth: 230,
-                      maxWidth: 230,
-                    ),
-                    icon: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.add, color: Colors.grey, size: 30),
-                    ),
-                    itemBuilder: (context) => [
-                      _buildAttachmentItem('Camera', Icons.camera_alt_outlined),
-                      const PopupMenuDivider(height: 1),
-                      _buildAttachmentItem('Photos', Icons.collections_outlined),
-                      const PopupMenuDivider(height: 1),
-                      _buildAttachmentItem('Files', Icons.folder_open_outlined),
-                    ],
-                  ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle),
+                  child: const Icon(Icons.add, color: Colors.grey, size: 30),
                 ),
                 const SizedBox(width: 15),
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(15),
-                    ),
+                    decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(15)),
                     child: TextField(
+                      controller: _controller,
                       decoration: InputDecoration(
                         hintText: 'Type a message...',
                         hintStyle: GoogleFonts.inter(color: Colors.grey, fontSize: 14),
                         border: InputBorder.none,
                       ),
+                      onSubmitted: (_) => _sendMessage(),
                     ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: _sendMessage,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(colors: [Color(0xFF7C3AED), Color(0xFFEC4899)]),
+                      shape: BoxShape.circle,
+                    ),
+                    child: _isSending
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
                   ),
                 ),
               ],
@@ -247,27 +287,20 @@ class _ChatPageState extends State<ChatPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              color: Colors.black,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          Text(title, style: GoogleFonts.inter(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w500)),
           Icon(icon, color: Colors.black, size: 26),
         ],
       ),
     );
   }
 
-  Widget _buildReceiverChat(String img, String message) {
+  Widget _buildReceiverChat(String message) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 25),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(radius: 18, backgroundImage: AssetImage(img)),
+          CircleAvatar(radius: 18, backgroundImage: _getAvatarImage()),
           const SizedBox(width: 10),
           Flexible(
             child: Container(
@@ -281,10 +314,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 border: Border.all(color: const Color(0xFFE5E7EB)),
               ),
-              child: Text(
-                message,
-                style: GoogleFonts.inter(color: Colors.black87, fontSize: 14),
-              ),
+              child: Text(message, style: GoogleFonts.inter(color: Colors.black87, fontSize: 14)),
             ),
           ),
           const SizedBox(width: 40),
@@ -293,7 +323,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _buildSenderChat(String img, String message) {
+  Widget _buildSenderChat(String message) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Row(
@@ -304,23 +334,23 @@ class _ChatPageState extends State<ChatPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF7C3AED), Color(0xFF8B5CF6)],
-                ),
+                gradient: LinearGradient(colors: [Color(0xFF7C3AED), Color(0xFF8B5CF6)]),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   bottomLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
               ),
-              child: Text(
-                message,
-                style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
-              ),
+              child: Text(message, style: GoogleFonts.inter(color: Colors.white, fontSize: 14)),
             ),
           ),
           const SizedBox(width: 10),
-          CircleAvatar(radius: 18, backgroundImage: AssetImage(img)),
+          CircleAvatar(
+            radius: 18,
+            backgroundImage: ApiService().currentUser?['profileImageUrl'] != null
+                ? NetworkImage('${ApiConfig.url}${ApiService().currentUser!['profileImageUrl']}') as ImageProvider
+                : const AssetImage('images/user1.png'),
+          ),
         ],
       ),
     );

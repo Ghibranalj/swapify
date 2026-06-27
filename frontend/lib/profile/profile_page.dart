@@ -5,6 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'edit_profile_page.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:convert';
+import 'package:frontend/services/api_service.dart';
+import 'package:frontend/services/api_config.dart';
+import 'package:frontend/splash.dart';
+import 'package:frontend/subscription/subscription_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final int swapCount;
@@ -29,6 +33,10 @@ class _ProfilePageState extends State<ProfilePage> {
   late List<String> userGoals;
   late List<dynamic> userCertificates;
   
+  List<dynamic> _profileSkillsData = [];
+  List<dynamic> _profileGoalsData = [];
+  List<dynamic> _profileCertsData = [];
+  
   int swapCount = 0;
 
   @override
@@ -41,65 +49,65 @@ class _ProfilePageState extends State<ProfilePage> {
   void didUpdateWidget(covariant ProfilePage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.swapCount != widget.swapCount) {
-      _syncSwapCount(widget.swapCount);
+      _loadProfileData();
     }
   }
 
-  Future<void> _syncSwapCount(int newCount) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('swapCount', newCount);
-    setState(() {
-      swapCount = newCount;
-    });
-  }
-
   Future<void> _loadProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    setState(() {
-      String? savedName = prefs.getString('savedName');
-      userName = (savedName != null && savedName.isNotEmpty) ? savedName : 'Sophie Beck';
+    try {
+      final apiService = ApiService();
+      final profile = await apiService.getMyProfile();
 
-      String? savedBio = prefs.getString('savedBio');
-      userBio = (savedBio != null && savedBio.isNotEmpty) ? savedBio : 'Passionate designer and coder. Love to learn new things! 🎨';
-
-      String? imagePath = prefs.getString('savedImage');
-      userProfileImageString = imagePath;
-      if (imagePath != null && imagePath.isNotEmpty) {
-        try {
-          userProfileImage = File(imagePath);
-        } catch (_) {
+      setState(() {
+        userName = profile['name'] ?? '';
+        userBio = profile['bio'] ?? '';
+        
+        final rawProfileImageUrl = profile['profileImageUrl'];
+        if (rawProfileImageUrl != null && rawProfileImageUrl.toString().isNotEmpty) {
+          if (rawProfileImageUrl.toString().startsWith('http')) {
+            userProfileImageString = rawProfileImageUrl.toString();
+          } else {
+            userProfileImageString = '${ApiConfig.url}$rawProfileImageUrl';
+          }
+        } else {
+          userProfileImageString = null;
         }
-      } else {
-        userProfileImage = null;
+
+        // Mapping skills
+        _profileSkillsData = profile['skills'] as List<dynamic>? ?? [];
+        userSkills = _profileSkillsData.map((s) => s['name'].toString()).toList();
+
+        // Mapping learning goals
+        _profileGoalsData = profile['learningGoals'] as List<dynamic>? ?? [];
+        userGoals = _profileGoalsData.map((g) => g['name'].toString()).toList();
+
+        // Mapping certificates
+        _profileCertsData = profile['certificates'] as List<dynamic>? ?? [];
+        userCertificates = _profileCertsData.map((c) {
+          final fileUrl = c['fileUrl'] ?? '';
+          if (fileUrl.isNotEmpty) {
+            if (fileUrl.startsWith('http')) {
+              return fileUrl;
+            }
+            return '${ApiConfig.url}$fileUrl';
+          }
+          return '';
+        }).where((url) => url.isNotEmpty).toList();
+
+        swapCount = profile['swapCount'] ?? 0;
+        isPremium = profile['isPremium'] ?? false;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load profile: ${e.toString()}')),
+        );
       }
-
-      userSkills = prefs.getStringList('savedSkills') ?? [];
-      userGoals = prefs.getStringList('savedGoals') ?? [];
-      
-      userCertificates = prefs.getStringList('savedCertificates') ?? [];
-      
-      int savedSwap = prefs.getInt('swapCount') ?? 0;
-      swapCount = widget.swapCount > savedSwap ? widget.swapCount : savedSwap;
-      prefs.setInt('swapCount', swapCount); 
-      
-      isLoading = false;
-    });
-  }
-
-  Future<void> _saveProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('savedName', userName);
-    await prefs.setString('savedBio', userBio);
-    await prefs.setString('savedImage', userProfileImageString ?? '');
-    await prefs.setStringList('savedSkills', userSkills);
-    await prefs.setStringList('savedGoals', userGoals);
-    
-    List<String> certPaths = userCertificates.map((cert) {
-      if (cert is File) return cert.path;
-      return cert.toString();
-    }).toList();
-    await prefs.setStringList('savedCertificates', certPaths);
+    }
   }
 
   Future<void> refreshData() async {
@@ -120,7 +128,7 @@ class _ProfilePageState extends State<ProfilePage> {
         builder: (context) => EditProfilePage(
           initialName: userName,
           initialBio: userBio,
-          initialImage: userProfileImage,
+          initialImageUrl: userProfileImageString,
           initialSkills: List.from(userSkills),
           initialGoals: List.from(userGoals),
           initialCertificates: List.from(userCertificates),
@@ -130,42 +138,151 @@ class _ProfilePageState extends State<ProfilePage> {
     );
 
     if (result != null) {
-      setState(() {
-        userName = result['name'];
-        userBio = result['bio'];
-        
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
+        ),
+      );
+
+      try {
+        final apiService = ApiService();
+
+        // 1. Update Profile (Name & Bio)
+        await apiService.updateProfile(
+          name: result['name']?.toString().trim(),
+          bio: result['bio']?.toString().trim(),
+        );
+
+        // 2. Upload Profile Image if selected
         if (result['profileImage'] is File) {
-          userProfileImage = result['profileImage'];
-          userProfileImageString = userProfileImage?.path;
-        } else if (result['profileImage'] is String) {
-          userProfileImageString = result['profileImage'];
-          try {
-            userProfileImage = userProfileImageString != null ? File(userProfileImageString!) : null;
-          } catch (_) {}
-        } else {
-          userProfileImage = null;
-          userProfileImageString = null;
+          await apiService.uploadProfileImage(result['profileImage']);
         }
 
-        userSkills = List<String>.from(result['skills']);
-        userGoals = List<String>.from(result['goals']);
-        userCertificates = List<dynamic>.from(result['certificates']);
-      });
+        // 3. Diff and update skills
+        final newSkills = List<String>.from(result['skills']);
+        final oldSkills = _profileSkillsData.map((s) => s['name'].toString()).toList();
 
-      await _saveProfileData();
+        final skillsToAdd = newSkills.where((s) => !oldSkills.contains(s)).toList();
+        final skillsToRemove = oldSkills.where((s) => !newSkills.contains(s)).toList();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Profile successfully updated!',
-              style: GoogleFonts.inter(color: Colors.white),
+        if (skillsToAdd.isNotEmpty || skillsToRemove.isNotEmpty) {
+          final dbSkills = await apiService.getAllSkills();
+
+          // Add new skills
+          for (final name in skillsToAdd) {
+            final matched = dbSkills.firstWhere(
+              (s) => s['name'].toString().toLowerCase() == name.toLowerCase(),
+              orElse: () => null,
+            );
+            if (matched != null) {
+              await apiService.addUserSkill(matched['id'], proficiency: 4);
+            }
+          }
+
+          // Remove deleted skills
+          for (final name in skillsToRemove) {
+            final matched = _profileSkillsData.firstWhere(
+              (s) => s['name'].toString().toLowerCase() == name.toLowerCase(),
+              orElse: () => null,
+            );
+            if (matched != null) {
+              await apiService.removeUserSkill(matched['id']);
+            }
+          }
+        }
+
+        // 4. Diff and update goals
+        final newGoals = List<String>.from(result['goals']);
+        final oldGoals = _profileGoalsData.map((g) => g['name'].toString()).toList();
+
+        final goalsToAdd = newGoals.where((g) => !oldGoals.contains(g)).toList();
+        final goalsToRemove = oldGoals.where((g) => !newGoals.contains(g)).toList();
+
+        if (goalsToAdd.isNotEmpty || goalsToRemove.isNotEmpty) {
+          final dbSkills = await apiService.getAllSkills();
+
+          // Add new goals
+          for (final name in goalsToAdd) {
+            final matched = dbSkills.firstWhere(
+              (s) => s['name'].toString().toLowerCase() == name.toLowerCase(),
+              orElse: () => null,
+            );
+            if (matched != null) {
+              await apiService.addLearningGoal(matched['id'], priority: 4);
+            }
+          }
+
+          // Remove deleted goals
+          for (final name in goalsToRemove) {
+            final matched = _profileGoalsData.firstWhere(
+              (s) => s['name'].toString().toLowerCase() == name.toLowerCase(),
+              orElse: () => null,
+            );
+            if (matched != null) {
+              await apiService.removeLearningGoal(matched['id']);
+            }
+          }
+        }
+
+        // 5. Diff and update certificates
+        final newCerts = List<dynamic>.from(result['certificates']);
+        final certsToAdd = newCerts.whereType<File>().toList();
+        final certsToRemove = userCertificates.where((url) => !newCerts.contains(url)).toList();
+
+        if (certsToAdd.isNotEmpty || certsToRemove.isNotEmpty) {
+          if (certsToAdd.isNotEmpty) {
+            final userProfile = await apiService.getMyProfile();
+            final skills = userProfile['skills'] as List<dynamic>? ?? [];
+            final firstSkillId = skills.isNotEmpty ? skills[0]['skillId'] : null;
+
+            for (final file in certsToAdd) {
+              final fileName = file.path.split('/').last;
+              await apiService.uploadCertificate(file, fileName, firstSkillId ?? '');
+            }
+          }
+
+          for (final url in certsToRemove) {
+            final matched = _profileCertsData.firstWhere((c) {
+              final fileUrl = c['fileUrl'] ?? '';
+              return fileUrl.isNotEmpty && url.toString().contains(fileUrl);
+            }, orElse: () => null);
+
+            if (matched != null) {
+              await apiService.deleteCertificate(matched['id']);
+            }
+          }
+        }
+
+        await _loadProfileData();
+
+        if (mounted) {
+          Navigator.pop(context); // Dismiss loading dialog
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Profile successfully updated!',
+                style: GoogleFonts.inter(color: Colors.white),
+              ),
+              backgroundColor: const Color(0xFF7B3AF5),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            backgroundColor: const Color(0xFF7B3AF5),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Dismiss loading dialog
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update profile: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -519,11 +636,31 @@ class _ProfilePageState extends State<ProfilePage> {
                                   Icons.logout_outlined,
                                   const Color(0xFFE74C3C),
                                   Colors.white,
-                                  onTap: () {},
+                                  onTap: () async {
+                                    await ApiService().logout();
+                                    if (mounted) {
+                                      Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const LoginPage()),
+                                        (route) => false,
+                                      );
+                                    }
+                                  },
                                 ),
                                 if (!isPremium) ...[
                                   const SizedBox(height: 20),
-                                  _buildPremiumBanner(),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final result = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const SubscriptionPage()),
+                                      );
+                                      if (result == true) {
+                                        _loadProfileData();
+                                      }
+                                    },
+                                    child: _buildPremiumBanner(),
+                                  ),
                                 ],
                               ],
                             ),

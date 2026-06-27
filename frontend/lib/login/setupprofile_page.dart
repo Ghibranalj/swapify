@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/login/uploadcertificate_page.dart';
+import 'package:frontend/services/api_service.dart';
 
 class SetUpProfilePage extends StatefulWidget {
   const SetUpProfilePage({super.key});
@@ -35,6 +37,16 @@ class _SetUpProfilePageState extends State<SetUpProfilePage> {
     'Database', 'Python', 'Singing', 'UI/UX Design', 'Golang', 'React Native'
   ];
   final Set<String> _selectedLearnSkills = {};
+
+  @override
+  void initState() {
+    super.initState();
+    final user = ApiService().currentUser;
+    if (user != null) {
+      final name = user['name'] ?? '';
+      _nameController.text = (name == 'New User') ? '' : name;
+    }
+  }
 
   @override
   void dispose() {
@@ -298,30 +310,92 @@ class _SetUpProfilePageState extends State<SetUpProfilePage> {
                 ),
                 child: ElevatedButton(
                   onPressed: () async {
-                    final prefs = await SharedPreferences.getInstance();
-                    
-                    await prefs.setInt('swap_count', 0);
-                    
-                    if (_nameController.text.trim().isNotEmpty) {
-                      await prefs.setString('savedName', _nameController.text.trim());
-                    }
-                    if (_bioController.text.trim().isNotEmpty) {
-                      await prefs.setString('savedBio', _bioController.text.trim());
-                    }
-                    if (_profileImageFile != null) {
-                      await prefs.setString('savedImage', _profileImageFile!.path);
-                    }
-                    
-                    await prefs.setStringList('savedSkills', _selectedOfferSkills.toList());
-                    await prefs.setStringList('savedGoals', _selectedLearnSkills.toList());
-
-                    if (mounted) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const UploadCertificatePage(),
-                        ),
+                    if (_nameController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Name is required')),
                       );
+                      return;
+                    }
+
+                    // Show loading dialog
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => const Center(
+                        child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
+                      ),
+                    );
+
+                    try {
+                      final apiService = ApiService();
+                      
+                      // 1. Update Profile (Name & Bio)
+                      await apiService.updateProfile(
+                        name: _nameController.text.trim(),
+                        bio: _bioController.text.trim(),
+                      );
+
+                      // 2. Upload Profile Image if selected
+                      if (_profileImageFile != null) {
+                        await apiService.uploadProfileImage(File(_profileImageFile!.path));
+                      }
+
+                      // 3. Sync Skills
+                      final dbSkills = await apiService.getAllSkills();
+                      
+                      // Match and Add Skills Offered
+                      for (final skillName in _selectedOfferSkills) {
+                        final matched = dbSkills.firstWhere(
+                          (s) => (s['name'] as String).toLowerCase() == skillName.toLowerCase(),
+                          orElse: () => null,
+                        );
+                        if (matched != null) {
+                          await apiService.addUserSkill(matched['id'], proficiency: 4);
+                        }
+                      }
+
+                      // Match and Add Learning Goals
+                      for (final goalName in _selectedLearnSkills) {
+                        final matched = dbSkills.firstWhere(
+                          (s) => (s['name'] as String).toLowerCase() == goalName.toLowerCase(),
+                          orElse: () => null,
+                        );
+                        if (matched != null) {
+                          await apiService.addLearningGoal(matched['id'], priority: 4);
+                        }
+                      }
+
+                      // Store locally in SharedPreferences for legacy UI compatibility
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setInt('swap_count', 0);
+                      await prefs.setString('savedName', _nameController.text.trim());
+                      await prefs.setString('savedBio', _bioController.text.trim());
+                      if (_profileImageFile != null) {
+                        await prefs.setString('savedImage', _profileImageFile!.path);
+                      }
+                      await prefs.setStringList('savedSkills', _selectedOfferSkills.toList());
+                      await prefs.setStringList('savedGoals', _selectedLearnSkills.toList());
+
+                      if (mounted) {
+                        // Dismiss loading dialog
+                        Navigator.pop(context);
+                        
+                        // Proceed to upload certificate page
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const UploadCertificatePage(),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        // Dismiss loading dialog
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to save profile: ${e.toString()}')),
+                        );
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(

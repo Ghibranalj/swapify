@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'request_swap_page.dart';
-import 'user_model.dart'; 
+import 'user_model.dart';
+import 'package:frontend/services/api_config.dart'; 
 
 class UserDetailPage extends StatelessWidget {
   final UserModel user; 
@@ -70,7 +71,11 @@ class UserDetailPage extends StatelessWidget {
                       children: [
                         CircleAvatar(
                           radius: 60,
-                          backgroundImage: AssetImage(user.imageAsset),
+                          backgroundImage: user.imageAsset.startsWith('http')
+                              ? NetworkImage(user.imageAsset)
+                              : user.imageAsset.startsWith('/uploads')
+                                  ? NetworkImage('${ApiConfig.url}${user.imageAsset}')
+                                  : AssetImage(user.imageAsset) as ImageProvider,
                         ),
                         const SizedBox(height: 20),
                         Text(
@@ -129,8 +134,7 @@ class UserDetailPage extends StatelessWidget {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => RequestSwapPage(
-                                  name: user.name,
-                                  imageAsset: user.imageAsset,
+                                  targetUser: user,
                                 ),
                               ),
                             );

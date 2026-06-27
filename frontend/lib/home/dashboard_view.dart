@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'user_detail_page.dart';
 import 'user_model.dart';
+import 'package:frontend/services/api_service.dart';
+import 'package:frontend/services/api_config.dart';
+import 'package:frontend/subscription/subscription_page.dart';
 
 class DashboardView extends StatefulWidget {
   final bool isPremium;
@@ -17,14 +20,49 @@ class DashboardView extends StatefulWidget {
 
 class _DashboardViewState extends State<DashboardView> {
   String _selectedCategory = 'All';
+  final TextEditingController _searchController = TextEditingController();
+  List<UserModel> _users = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFeed();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadFeed() async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final apiUsers = await ApiService().getFeed(
+        category: _selectedCategory,
+        search: _searchController.text.trim(),
+      );
+      setState(() {
+        _users = apiUsers.map((u) => UserModel.fromJson(u)).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load feed: ${e.toString()}')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Logika Filtering Backend-Friendly
-    final filteredUsers = _selectedCategory == 'All'
-        ? dummyUsers
-        : dummyUsers.where((user) => user.categories.contains(_selectedCategory)).toList();
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -49,6 +87,8 @@ class _DashboardViewState extends State<DashboardView> {
               ],
             ),
             child: TextField(
+              controller: _searchController,
+              onSubmitted: (_) => _loadFeed(),
               decoration: InputDecoration(
                 icon: Icon(Icons.search, color: Colors.grey[400]),
                 hintText: 'Search for skills or people...',
@@ -71,13 +111,31 @@ class _DashboardViewState extends State<DashboardView> {
           const SizedBox(height: 25),
           
           // Kondisi Premium Banner
-          if (!widget.isPremium) ...[
-            _buildPremiumBanner(),
+          if (ApiService().currentUser?['isPremium'] != true) ...[
+            GestureDetector(
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SubscriptionPage()),
+                );
+                if (result == true) {
+                  setState(() {});
+                }
+              },
+              child: _buildPremiumBanner(),
+            ),
             const SizedBox(height: 25),
           ],
           
           // List Card User Dinamis Berdasarkan Filter
-          if (filteredUsers.isEmpty)
+          if (_isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.only(top: 40),
+                child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
+              ),
+            )
+          else if (_users.isEmpty)
             Center(
               child: Padding(
                 padding: const EdgeInsets.only(top: 40),
@@ -88,7 +146,7 @@ class _DashboardViewState extends State<DashboardView> {
               ),
             )
           else
-            ...filteredUsers.map((user) => _buildUserCard(context, user: user)).toList(),
+            ..._users.map((user) => _buildUserCard(context, user: user)).toList(),
             
           const SizedBox(height: 100),
         ],
@@ -188,6 +246,7 @@ class _DashboardViewState extends State<DashboardView> {
         setState(() {
           _selectedCategory = label;
         });
+        _loadFeed();
       },
       child: Container(
         margin: const EdgeInsets.only(right: 10),
@@ -235,7 +294,11 @@ class _DashboardViewState extends State<DashboardView> {
             CircleAvatar(
               radius: 35,
               backgroundColor: Colors.grey[200],
-              backgroundImage: AssetImage(user.imageAsset),
+              backgroundImage: user.imageAsset.startsWith('http')
+                  ? NetworkImage(user.imageAsset)
+                  : user.imageAsset.startsWith('/uploads')
+                      ? NetworkImage('${ApiConfig.url}${user.imageAsset}')
+                      : AssetImage(user.imageAsset) as ImageProvider,
             ),
             const SizedBox(width: 15),
             Expanded(

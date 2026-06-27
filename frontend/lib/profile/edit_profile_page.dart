@@ -8,6 +8,7 @@ class EditProfilePage extends StatefulWidget {
   final String initialName;
   final String initialBio;
   final File? initialImage;
+  final String? initialImageUrl;
   final List<String> initialSkills;
   final List<String> initialGoals;
   final List<dynamic> initialCertificates;
@@ -18,6 +19,7 @@ class EditProfilePage extends StatefulWidget {
     required this.initialName,
     required this.initialBio,
     this.initialImage,
+    this.initialImageUrl,
     required this.initialSkills,
     required this.initialGoals,
     required this.initialCertificates,
@@ -35,6 +37,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _goalController = TextEditingController();
 
   File? _profileImage;
+  String? _imageUrl;
   final ImagePicker _picker = ImagePicker();
 
   late List<String> mySkills;
@@ -47,6 +50,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _nameController = TextEditingController(text: widget.initialName);
     _bioController = TextEditingController(text: widget.initialBio);
     _profileImage = widget.initialImage;
+    _imageUrl = widget.initialImageUrl;
     mySkills = widget.initialSkills;
     learningGoals = widget.initialGoals;
     certificates = widget.initialCertificates;
@@ -66,6 +70,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (pickedFile != null) {
       setState(() {
         _profileImage = File(pickedFile.path);
+        _imageUrl = null;
       });
     }
   }
@@ -185,8 +190,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         backgroundColor: const Color(0xFFB494FF),
                         backgroundImage: _profileImage != null
                             ? FileImage(_profileImage!)
-                            : null,
-                        child: _profileImage == null
+                            : (_imageUrl != null && _imageUrl!.isNotEmpty
+                                ? NetworkImage(_imageUrl!) as ImageProvider
+                                : null),
+                        child: (_profileImage == null && (_imageUrl == null || _imageUrl!.isEmpty))
                             ? const Icon(Icons.person,
                                 size: 70, color: Colors.white)
                             : null,

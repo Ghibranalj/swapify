@@ -1,0 +1,575 @@
+classDiagram
+    direction TB
+
+    class User {
+        <<Entity>>
+        +String id
+        +String name
+        +String bio
+        +String profileImageUrl
+        +String email
+        +String googleId
+        +Boolean isPremium
+        +Date premiumExpiresAt
+        +Number swapCount
+        +Boolean isAdmin
+        +String refreshToken
+        +String status
+        +Date createdAt
+        +Date updatedAt
+        +UserSkill[] skills
+        +UserLearningGoal[] learningGoals
+        +Certificate[] certificates
+    }
+
+    class Skill {
+        <<Entity>>
+        +String id
+        +String name
+        +String category
+        +Boolean isUserCreated
+        +Date createdAt
+    }
+
+    class UserSkill {
+        <<Entity>>
+        +String id
+        +String userId
+        +String skillId
+        +Number proficiency
+        +Date createdAt
+        +User user
+        +Skill skill
+    }
+
+    class UserLearningGoal {
+        <<Entity>>
+        +String id
+        +String userId
+        +String skillId
+        +Number priority
+        +Date createdAt
+        +User user
+        +Skill skill
+    }
+
+    class SwapRequest {
+        <<Entity>>
+        +String id
+        +String requesterId
+        +String providerId
+        +String requesterSkillId
+        +String providerSkillId
+        +String message
+        +String status
+        +Number rating
+        +String ratingComment
+        +Date ratedAt
+        +Date createdAt
+        +Date updatedAt
+        +User requester
+        +User provider
+        +Skill requesterSkill
+        +Skill providerSkill
+    }
+
+    class Message {
+        <<Entity>>
+        +String id
+        +String swapRequestId
+        +String senderId
+        +String content
+        +Boolean isRead
+        +Date createdAt
+        +SwapRequest swapRequest
+        +User sender
+    }
+
+    class Notification {
+        <<Entity>>
+        +String id
+        +String userId
+        +String type
+        +String title
+        +String referenceId
+        +Boolean isRead
+        +Date createdAt
+        +User user
+    }
+
+    class Certificate {
+        <<Entity>>
+        +String id
+        +String userId
+        +String skillId
+        +String title
+        +String fileUrl
+        +String fileName
+        +String fileType
+        +Number fileSize
+        +Date createdAt
+        +User user
+        +Skill skill
+    }
+
+    class Subscription {
+        <<Entity>>
+        +String id
+        +String userId
+        +String plan
+        +Number price
+        +String paymentMethod
+        +String status
+        +Date startsAt
+        +Date expiresAt
+        +Date createdAt
+        +User user
+    }
+
+    class AuthService {
+        <<Injectable>>
+        -OAuth2Client googleClient
+        -Repository~User~ usersRepository
+        -JwtService jwtService
+        -ConfigService configService
+        +googleLogin(idToken String) Promise
+        +refreshAccessToken(refreshToken String) Promise
+        +logout(userId String) Promise
+        -generateAccessToken(user User) String
+    }
+
+    class AuthController {
+        <<Controller>>
+        -AuthService authService
+        +googleLogin(dto GoogleLoginDto) Promise
+        +refreshToken(dto RefreshTokenDto) Promise
+        +logout(user User) Promise
+    }
+
+    class JwtStrategy {
+        <<Injectable>>
+        -Repository~User~ usersRepository
+        +validate(payload Object) Promise~User~
+    }
+
+    class UsersService {
+        <<Injectable>>
+        -Repository~User~ userRepo
+        -Repository~UserSkill~ userSkillRepo
+        -Repository~UserLearningGoal~ learningGoalRepo
+        -Repository~Certificate~ certificateRepo
+        -Repository~SwapRequest~ swapRequestRepo
+        +getProfile(userId String) Promise
+        +updateProfile(userId String, dto UpdateProfileDto) Promise
+        +getPublicProfile(userId String) Promise
+        +uploadProfileImage(userId String, fileUrl String) Promise
+        -computeRating(userId String) Promise
+    }
+
+    class UsersController {
+        <<Controller>>
+        -UsersService usersService
+        +getMyProfile(user Object) Promise
+        +updateMyProfile(user Object, dto UpdateProfileDto) Promise
+        +uploadProfileImage(user Object, file File) Promise
+        +getPublicProfile(id String) Promise
+    }
+
+    class SkillsService {
+        <<Injectable>>
+        -Repository~Skill~ skillRepo
+        -Repository~UserSkill~ userSkillRepo
+        -Repository~UserLearningGoal~ goalRepo
+        -Repository~User~ userRepo
+        +findAll(query Object) Promise
+        +create(dto CreateSkillDto) Promise
+        +getUserSkills(userId String) Promise
+        +addUserSkill(userId String, dto AddUserSkillDto) Promise
+        +removeUserSkill(userId String, id String) Promise
+        +getLearningGoals(userId String) Promise
+        +addLearningGoal(userId String, dto AddLearningGoalDto) Promise
+        +removeLearningGoal(userId String, id String) Promise
+    }
+
+    class SkillsController {
+        <<Controller>>
+        -SkillsService skillsService
+        +findAll(category String, search String, page String, limit String)
+        +create(dto CreateSkillDto)
+        +getUserSkills(user User)
+        +addUserSkill(user User, dto AddUserSkillDto)
+        +removeUserSkill(user User, id String)
+        +getLearningGoals(user User)
+        +addLearningGoal(user User, dto AddLearningGoalDto)
+        +removeLearningGoal(user User, id String)
+    }
+
+    class SwapRequestsService {
+        <<Injectable>>
+        -Repository~SwapRequest~ swapRepo
+        -Repository~User~ userRepo
+        -Repository~Skill~ skillRepo
+        -Repository~Notification~ notifRepo
+        +create(requesterId String, dto Object) Promise
+        +findAll(userId String, query Object) Promise
+        +findOne(id String, userId String) Promise
+        +accept(id String, userId String) Promise
+        +decline(id String, userId String) Promise
+        +cancel(id String, userId String) Promise
+        +complete(id String, userId String) Promise
+        +rate(id String, userId String, dto Object) Promise
+    }
+
+    class SwapRequestsController {
+        <<Controller>>
+        -SwapRequestsService swapService
+        +create(user User, dto CreateSwapRequestDto)
+        +findAll(user User, status String, direction String, page String, limit String)
+        +findOne(user User, id String)
+        +accept(user User, id String)
+        +decline(user User, id String)
+        +cancel(user User, id String)
+        +complete(user User, id String)
+        +rate(user User, id String, dto RateSwapDto)
+    }
+
+    class MessagesService {
+        <<Injectable>>
+        -Repository~Message~ msgRepo
+        -Repository~SwapRequest~ swapRepo
+        -Repository~User~ userRepo
+        -Repository~Notification~ notifRepo
+        +getThreads(userId String) Promise
+        +getMessages(swapRequestId String, userId String, query Object) Promise
+        +sendMessage(swapRequestId String, senderId String, dto Object) Promise
+        +markAsRead(messageId String, userId String) Promise
+        +markAllThreadAsRead(swapRequestId String, userId String) Promise
+        -getRelativeTime(date Date) String
+    }
+
+    class MessagesController {
+        <<Controller>>
+        -MessagesService messagesService
+        +getThreads(user User)
+        +getMessages(user User, swapRequestId String, before String, limit String)
+        +sendMessage(user User, swapRequestId String, dto SendMessageDto)
+        +markAsRead(user User, id String)
+        +markAllRead(user User, swapRequestId String)
+    }
+
+    class MessagesGateway {
+        <<WebSocketGateway>>
+        +Server server
+        -Map onlineUsers
+        -MessagesService messagesService
+        +handleConnection(client Socket) void
+        +handleDisconnect(client Socket) void
+        +handleJoinRoom(client Socket, swapRequestId String) Object
+        +handleLeaveRoom(client Socket, swapRequestId String) void
+        +handleSendMessage(client Socket, data Object) Promise
+        +handleTyping(client Socket, swapRequestId String) void
+    }
+
+    class NotificationsService {
+        <<Injectable>>
+        -Repository~Notification~ notificationRepo
+        +create(userId String, type String, title String, referenceId String) Promise~Notification~
+        +findAll(userId String, query Object) Promise
+        +getUnreadCount(userId String) Promise~Number~
+        +markAsRead(id String, userId String) Promise~Notification~
+        +markAllAsRead(userId String) Promise
+    }
+
+    class NotificationsController {
+        <<Controller>>
+        -NotificationsService notificationsService
+        +findAll(user User, read String, page String, limit String)
+        +getUnreadCount(user User)
+        +markAsRead(user User, id String)
+        +markAllAsRead(user User)
+    }
+
+    class CertificatesService {
+        <<Injectable>>
+        -Repository~Certificate~ certRepo
+        -Repository~User~ userRepo
+        -StorageService storageService
+        +upload(userId String, file File, title String, skillId String) Promise
+        +getUserCertificates(userId String) Promise
+        +delete(userId String, certId String) Promise
+    }
+
+    class CertificatesController {
+        <<Controller>>
+        -CertificatesService certificatesService
+        +upload(user User, file File, dto UploadCertificateDto)
+        +getMyCertificates(user User)
+        +delete(user User, id String)
+    }
+
+    class StorageService {
+        <<Injectable>>
+        -String uploadDir
+        +uploadFile(file File) Promise
+        +deleteFile(fileName String) Promise~void~
+    }
+
+    class SubscriptionsService {
+        <<Injectable>>
+        -Repository~Subscription~ subRepo
+        -Repository~User~ userRepo
+        +getPlans() Object
+        +subscribe(userId String, dto Object) Promise
+        +getMySubscription(userId String) Promise
+        +cancel(userId String) Promise
+    }
+
+    class SubscriptionsController {
+        <<Controller>>
+        -SubscriptionsService subsService
+        +getPlans()
+        +subscribe(user User, dto CreateSubscriptionDto)
+        +getMySubscription(user User)
+        +cancel(user User)
+    }
+
+    class FeedService {
+        <<Injectable>>
+        -Repository~User~ userRepo
+        -Repository~UserSkill~ userSkillRepo
+        -Repository~UserLearningGoal~ goalRepo
+        -Repository~Skill~ skillRepo
+        -Repository~SwapRequest~ swapRepo
+        -Repository~Certificate~ certRepo
+        +discover(userId String, query Object) Promise
+    }
+
+    class FeedController {
+        <<Controller>>
+        -FeedService feedService
+        +discover(user User, category String, search String, sort String, page String, limit String)
+    }
+
+    class AdminService {
+        <<Injectable>>
+        -Repository~User~ userRepo
+        -Repository~Skill~ skillRepo
+        -Repository~SwapRequest~ swapRepo
+        -Repository~Notification~ notifRepo
+        +getUsers(query Object) Promise
+        +updateUser(id String, data Object) Promise
+        +deleteUser(id String) Promise
+        +approveUser(id String) Promise
+        +suspendUser(id String) Promise
+        +restoreUser(id String) Promise
+        +getSkills(query Object) Promise
+        +createSkill(dto Object) Promise
+        +updateSkill(id String, dto Object) Promise
+        +deleteSkill(id String) Promise
+        +getStats() Promise
+        +getAlerts(query Object) Promise
+    }
+
+    class AdminController {
+        <<Controller>>
+        -AdminService adminService
+        +getUsers(search String, page String, limit String)
+        +updateUser(id String, dto AdminUpdateUserDto)
+        +deleteUser(id String)
+        +approveUser(id String)
+        +suspendUser(id String)
+        +restoreUser(id String)
+        +getSkills(search String)
+        +createSkill(dto CreateSkillDto)
+        +updateSkill(id String, dto Object)
+        +deleteSkill(id String)
+        +getStats()
+        +getAlerts(page String, limit String)
+    }
+
+    class JwtAuthGuard {
+        <<Injectable>>
+    }
+
+    class AdminGuard {
+        <<Injectable>>
+        +canActivate(context ExecutionContext) Boolean
+    }
+
+    class PremiumGuard {
+        <<Injectable>>
+        +canActivate(context ExecutionContext) Boolean
+    }
+
+    class AllExceptionsFilter {
+        <<ExceptionFilter>>
+        +catch(exception unknown, host ArgumentsHost) void
+    }
+
+    class PaginationDto {
+        <<DTO>>
+        +Number page
+        +Number limit
+    }
+
+    class PaginatedResponse~T~ {
+        +T[] data
+        +Number page
+        +Number totalPages
+        +Number total
+    }
+
+    class GoogleLoginDto {
+        <<DTO>>
+        +String idToken
+    }
+
+    class RefreshTokenDto {
+        <<DTO>>
+        +String refreshToken
+    }
+
+    class UpdateProfileDto {
+        <<DTO>>
+        +String name
+        +String bio
+    }
+
+    class CreateSkillDto {
+        <<DTO>>
+        +String name
+        +String category
+    }
+
+    class AddUserSkillDto {
+        <<DTO>>
+        +String skillId
+        +Number proficiency
+    }
+
+    class AddLearningGoalDto {
+        <<DTO>>
+        +String skillId
+        +Number priority
+    }
+
+    class CreateSwapRequestDto {
+        <<DTO>>
+        +String providerId
+        +String requesterSkillId
+        +String providerSkillId
+        +String message
+    }
+
+    class RateSwapDto {
+        <<DTO>>
+        +Number rating
+        +String comment
+    }
+
+    class SendMessageDto {
+        <<DTO>>
+        +String content
+    }
+
+    class UploadCertificateDto {
+        <<DTO>>
+        +String title
+        +String skillId
+    }
+
+    class CreateSubscriptionDto {
+        <<DTO>>
+        +String planId
+        +String paymentMethod
+        +Object paymentDetails
+    }
+
+    class CreditCardDetailsDto {
+        <<DTO>>
+        +String cardholderName
+        +String cardNumber
+        +String expiryDate
+        +String cvv
+        +Boolean saveCard
+    }
+
+    class EWalletDetailsDto {
+        <<DTO>>
+        +String phoneNumber
+        +String provider
+    }
+
+    class BankTransferDetailsDto {
+        <<DTO>>
+        +String bankName
+        +String accountNumber
+        +String accountHolder
+    }
+
+    class AdminUpdateUserDto {
+        <<DTO>>
+        +String name
+        +String email
+        +Boolean isPremium
+        +Boolean isAdmin
+        +String status
+    }
+
+    class AppModule {
+        <<Module>>
+    }
+
+    class AppController {
+        <<Controller>>
+        -AppService appService
+        +getHello() String
+    }
+
+    class AppService {
+        <<Injectable>>
+        +getHello() String
+    }
+
+    class DatabaseModule {
+        <<Module>>
+    }
+
+    %% ===== Entity Relationships =====
+    User "1" --> "*" UserSkill : has
+    User "1" --> "*" UserLearningGoal : has
+    User "1" --> "*" Certificate : has
+    UserSkill "*" --> "1" Skill : references
+    UserLearningGoal "*" --> "1" Skill : references
+    Certificate "*" --> "1" Skill : references
+    SwapRequest "*" --> "1" User : requester
+    SwapRequest "*" --> "1" User : provider
+    SwapRequest "*" --> "1" Skill : requesterSkill
+    SwapRequest "*" --> "1" Skill : providerSkill
+    Message "*" --> "1" SwapRequest : belongsTo
+    Message "*" --> "1" User : sender
+    Notification "*" --> "1" User : belongsTo
+    Subscription "*" --> "1" User : belongsTo
+
+    %% ===== Controller-Service Dependencies =====
+    AuthController --> AuthService : uses
+    UsersController --> UsersService : uses
+    SkillsController --> SkillsService : uses
+    SwapRequestsController --> SwapRequestsService : uses
+    MessagesController --> MessagesService : uses
+    NotificationsController --> NotificationsService : uses
+    CertificatesController --> CertificatesService : uses
+    SubscriptionsController --> SubscriptionsService : uses
+    FeedController --> FeedService : uses
+    AdminController --> AdminService : uses
+    AppController --> AppService : uses
+    MessagesGateway --> MessagesService : uses
+    CertificatesService --> StorageService : uses
+
+    %% ===== Strategy / Guard Inheritance =====
+    JwtAuthGuard --|> AuthGuard~jwt~ : extends
+    AdminGuard ..|> CanActivate : implements
+    PremiumGuard ..|> CanActivate : implements
+    AllExceptionsFilter ..|> ExceptionFilter : implements
+    MessagesGateway ..|> OnGatewayConnection : implements
+    MessagesGateway ..|> OnGatewayDisconnect : implements

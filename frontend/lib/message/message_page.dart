@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'chat_model.dart';
 import 'chat_page.dart';
+import 'package:frontend/services/api_service.dart';
+import 'package:frontend/services/api_config.dart';
 
 class MessagePage extends StatefulWidget {
   const MessagePage({super.key});
@@ -20,27 +22,33 @@ class _MessagePageState extends State<MessagePage> {
   }
 
   Future<List<ChatThreadModel>> fetchChatThreads() async {
-    await Future.delayed(const Duration(seconds: 1));
-    return [
-      ChatThreadModel(
-        id: '1',
-        name: 'Maya Rodriguez',
-        lastMessage: 'Saturday at 2pm?',
-        time: '6h ago',
-        image: 'images/user1.png',
-        unreadCount: '1',
-        isOnline: true,
-      ),
-      ChatThreadModel(
-        id: '2',
-        name: 'Alex Chen',
-        lastMessage: 'Lorem ipsum dolor sit...',
-        time: '6h ago',
-        image: 'images/user2.png',
-        unreadCount: '1',
-        isOnline: true,
-      ),
-    ];
+    final rawThreads = await ApiService().getThreads();
+    final myId = ApiService().currentUser?['id'];
+    return rawThreads.map((t) {
+      final swapRequest = t['swapRequest'] as Map<String, dynamic>? ?? t;
+      final swapId = swapRequest['id'] ?? t['swapRequestId'] ?? '';
+      final isRequester = (swapRequest['requesterId'] ?? swapRequest['requester']?['id']) == myId;
+      final other = isRequester
+          ? (swapRequest['provider'] ?? {})
+          : (swapRequest['requester'] ?? {});
+      final otherName = other['name'] ?? t['name'] ?? 'Unknown';
+      final imageUrl = (other['profileImageUrl'] ?? t['image'] ?? '') as String;
+      final lastMsg = (t['lastMessage'] is Map)
+          ? (t['lastMessage']['content'] ?? 'No messages yet')
+          : (t['lastMessage'] ?? t['content'] ?? 'No messages yet');
+      final updatedAt = t['updatedAt']?.toString() ?? '';
+      final timeLabel = updatedAt.isNotEmpty ? updatedAt.substring(0, 10) : '';
+      final unread = (t['unreadCount'] ?? 0).toString();
+      return ChatThreadModel(
+        id: swapId,
+        name: otherName,
+        lastMessage: lastMsg,
+        time: timeLabel,
+        image: imageUrl.isNotEmpty ? '${ApiConfig.url}$imageUrl' : '',
+        unreadCount: unread,
+        isOnline: false,
+      );
+    }).toList();
   }
 
   @override
@@ -172,12 +180,7 @@ class _MessagePageState extends State<MessagePage> {
                     final chat = threads[index];
                     return _buildChatTile(
                       context,
-                      name: chat.name,
-                      message: chat.lastMessage,
-                      time: chat.time,
-                      image: chat.image,
-                      unreadCount: chat.unreadCount,
-                      isOnline: chat.isOnline,
+                      thread: chat,
                     );
                   },
                 );
@@ -191,19 +194,20 @@ class _MessagePageState extends State<MessagePage> {
 
   Widget _buildChatTile(
     BuildContext context, {
-    required String name,
-    required String message,
-    required String time,
-    required String image,
-    required String unreadCount,
-    required bool isOnline,
+    required ChatThreadModel thread,
   }) {
+    final image = thread.image;
+    final isNetworkImage = image.startsWith('http');
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ChatPage(name: name, image: image),
+            builder: (context) => ChatPage(
+              name: thread.name,
+              image: image,
+              swapRequestId: thread.id,
+            ),
           ),
         );
       },
@@ -220,9 +224,13 @@ class _MessagePageState extends State<MessagePage> {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundImage: AssetImage(image),
+                  backgroundImage: isNetworkImage
+                      ? NetworkImage(image) as ImageProvider
+                      : (image.isNotEmpty
+                          ? AssetImage(image) as ImageProvider
+                          : const AssetImage('images/user1.png')),
                 ),
-                if (isOnline)
+                if (thread.isOnline)
                   Positioned(
                     right: 0,
                     bottom: 0,
@@ -243,51 +251,21 @@ class _MessagePageState extends State<MessagePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text(thread.name, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
-                  Text(
-                    message,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(thread.lastMessage, style: GoogleFonts.inter(fontSize: 14, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
                 ],
               ),
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  time,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
+                Text(thread.time, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFEC4899),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    unreadCount,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  decoration: const BoxDecoration(color: Color(0xFFEC4899), shape: BoxShape.circle),
+                  child: Text(thread.unreadCount, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:frontend/services/api_service.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -388,18 +389,21 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFEBE5FF),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Color(0xFF7C3AED),
-                            size: 16,
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFEBE5FF),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.arrow_back_ios_new,
+                              color: Color(0xFF7C3AED),
+                              size: 16,
+                            ),
                           ),
                         ),
                       ),
@@ -571,10 +575,58 @@ class _CheckoutPageState extends State<CheckoutPage> {
             right: 20,
             child: GestureDetector(
               onTap: _isFormValid
-                  ? () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Processing $_selectedMethod Payment...')),
+                  ? () async {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => const Center(
+                          child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
+                        ),
                       );
+                      try {
+                        Map<String, dynamic> details = {};
+                        String methodKey = '';
+                        if (_selectedMethod == 'Credit Card') {
+                          methodKey = 'credit_card';
+                          details = {
+                            'cardholderName': _nameController.text.trim(),
+                            'cardNumber': _numberController.text.trim(),
+                            'expiryDate': _expiryController.text.trim(),
+                            'cvv': _cvvController.text.trim(),
+                          };
+                        } else if (_selectedMethod == 'E-Wallet') {
+                          methodKey = 'e_wallet';
+                          details = {
+                            'phoneNumber': _phoneController.text.trim(),
+                          };
+                        } else if (_selectedMethod == 'Bank Transfer') {
+                          methodKey = 'bank_transfer';
+                          details = {
+                            'bankName': _selectedBank,
+                          };
+                        }
+                        await ApiService().upgradeToPremium('yearly', methodKey, details);
+                        if (mounted) {
+                          Navigator.pop(context); // Dismiss loading dialog
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Payment Successful! You are now a Premium member! 🎉'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                          Navigator.pop(context, true); // Pop CheckoutPage returning true
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          Navigator.pop(context); // Dismiss loading dialog
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Subscription failed: ${e.toString()}'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
                     }
                   : null,
               child: AnimatedContainer(

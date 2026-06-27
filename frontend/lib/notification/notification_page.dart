@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'notification_model.dart'; 
+import 'notification_model.dart';
+import 'package:frontend/services/api_service.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -18,41 +19,75 @@ class _NotificationPageState extends State<NotificationPage> {
     _notificationsFuture = fetchNotifications();
   }
 
-  // --- FUTURE PROOFING ---
+  String _getRelativeTime(String isoString) {
+    if (isoString.isEmpty) return '';
+    try {
+      if (isoString.contains('ago') || isoString.contains('now')) {
+        return isoString;
+      }
+      final parsedDate = DateTime.parse(isoString);
+      final diff = DateTime.now().difference(parsedDate);
+      if (diff.inDays >= 7) {
+        return '${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}';
+      } else if (diff.inDays >= 1) {
+        return '${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago';
+      } else if (diff.inHours >= 1) {
+        return '${diff.inHours} hour${diff.inHours > 1 ? 's' : ''} ago';
+      } else if (diff.inMinutes >= 1) {
+        return '${diff.inMinutes} minute${diff.inMinutes > 1 ? 's' : ''} ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (_) {
+      return isoString;
+    }
+  }
 
   Future<List<NotificationModel>> fetchNotifications() async {
-    await Future.delayed(const Duration(seconds: 1)); 
-    
-    // Data dummy
-    return [
-      NotificationModel(
-        icon: Icons.notifications_none_outlined,
-        iconColor: const Color(0xFFF39C12),
-        iconBgColor: const Color(0xFFFDEBD0),
-        title: 'Maya Rodriguez sent you a swap request',
-        time: '2 hours ago',
-        hasBorder: true,
-        isUnread: true,
-      ),
-      NotificationModel(
-        icon: Icons.notifications_none_outlined,
-        iconColor: const Color(0xFF3498DB),
-        iconBgColor: const Color(0xFFD6EAF8),
-        title: 'Jordan Kim accepted your swap request',
-        time: '1 day ago',
-        hasBorder: true,
-        isUnread: false,
-      ),
-      NotificationModel(
-        icon: Icons.check_circle_outline,
-        iconColor: const Color(0xFF2ECC71),
-        iconBgColor: const Color(0xFFD5F5E3),
-        title: 'Maya Rodriguez sent you a swap request',
-        time: '3 days ago',
-        hasBorder: false,
-        isUnread: false,
-      ),
-    ];
+    try {
+      final data = await ApiService().getNotifications();
+      return data.map<NotificationModel>((n) {
+        final type = n['type'] as String? ?? 'info';
+        IconData icon;
+        Color iconColor;
+        Color iconBgColor;
+
+        if (type.contains('accepted') || type.contains('complete')) {
+          icon = Icons.check_circle_outline;
+          iconColor = const Color(0xFF2ECC71);
+          iconBgColor = const Color(0xFFD5F5E3);
+        } else if (type.contains('declined') || type.contains('cancel')) {
+          icon = Icons.cancel_outlined;
+          iconColor = const Color(0xFFE74C3C);
+          iconBgColor = const Color(0xFFFDEDEC);
+        } else if (type.contains('message')) {
+          icon = Icons.chat_bubble_outline;
+          iconColor = const Color(0xFF3498DB);
+          iconBgColor = const Color(0xFFD6EAF8);
+        } else {
+          icon = Icons.notifications_none_outlined;
+          iconColor = const Color(0xFFF39C12);
+          iconBgColor = const Color(0xFFFDEBD0);
+        }
+
+        final createdAt = n['createdAt']?.toString() ?? '';
+        final timeLabel = _getRelativeTime(createdAt);
+        final isUnread = !(n['isRead'] as bool? ?? false);
+
+        return NotificationModel(
+          icon: icon,
+          iconColor: iconColor,
+          iconBgColor: iconBgColor,
+          title: n['message'] ?? n['title'] ?? 'New notification',
+          time: timeLabel,
+          hasBorder: isUnread,
+          isUnread: isUnread,
+        );
+      }).toList();
+    } catch (_) {
+      // fallback to empty
+      return [];
+    }
   }
 
   @override

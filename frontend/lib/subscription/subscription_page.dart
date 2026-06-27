@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:frontend/checkout/checkout_page.dart';
 
 class SubscriptionPage extends StatelessWidget {
   const SubscriptionPage({super.key});
@@ -112,6 +113,7 @@ class SubscriptionPage extends StatelessWidget {
   }
 
   Widget _buildSubscriptionPackageCard({
+    required BuildContext context,
     required String type,
     required String price,
     required List<String> perks,
@@ -227,31 +229,42 @@ class SubscriptionPage extends StatelessWidget {
                       }).toList(),
                     ),
                     const SizedBox(height: 25),
-                    Container(
-                      width: double.infinity,
-                      height: 55,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
-                        gradient: const LinearGradient(
-                          colors: [buttonStart, buttonEnd],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x33000000),
-                            blurRadius: 10,
-                            offset: Offset(0, 5),
+                    GestureDetector(
+                      onTap: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const CheckoutPage()),
+                        );
+                        if (result == true) {
+                          Navigator.pop(context, true);
+                        }
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        height: 55,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          gradient: const LinearGradient(
+                            colors: [buttonStart, buttonEnd],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          buttonText,
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x33000000),
+                              blurRadius: 10,
+                              offset: Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            buttonText,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -305,15 +318,18 @@ class SubscriptionPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 60),
-                Container(
-                  width: 45,
-                  height: 45,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF231441),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+                InkWell(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 45,
+                    height: 45,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF231441),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -399,12 +415,14 @@ class SubscriptionPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 25),
                 _buildSubscriptionPackageCard(
+                  context: context,
                   type: "Monthly",
                   price: "Rp175.000",
                   perks: ["All Premium Features", "Cancel anytime"],
                   buttonText: "Select Monthly",
                 ),
                 _buildSubscriptionPackageCard(
+                  context: context,
                   type: "Yearly",
                   price: "Rp1.550.000",
                   discount: "Save 26%",
@@ -420,30 +438,41 @@ class SubscriptionPage extends StatelessWidget {
             bottom: 30,
             left: 20,
             right: 20,
-            child: Container(
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-                gradient: const LinearGradient(
-                  colors: [buttonStart, buttonEnd],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x807C3AED),
-                    blurRadius: 15,
-                    offset: Offset(0, 8),
+            child: GestureDetector(
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CheckoutPage()),
+                );
+                if (result == true) {
+                  Navigator.pop(context, true);
+                }
+              },
+              child: Container(
+                height: 60,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  gradient: const LinearGradient(
+                    colors: [buttonStart, buttonEnd],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                   ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  "Subscribe Now",
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x807C3AED),
+                      blurRadius: 15,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    "Subscribe Now",
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),

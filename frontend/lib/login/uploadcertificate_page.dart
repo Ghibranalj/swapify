@@ -1,9 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/home/home_page.dart';
-import 'dart:convert'; 
+import 'package:frontend/services/api_service.dart'; 
 
 class UploadCertificatePage extends StatefulWidget {
   const UploadCertificatePage({super.key});
@@ -100,28 +102,46 @@ class _UploadCertificatePageState extends State<UploadCertificatePage> {
       return;
     }
 
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      List<String> certData = [];
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
+      ),
+    );
 
-      if (kIsWeb) {
-        certData = _uploadedCertificates.map((e) {
-          if (e.bytes != null) {
-            return 'base64,${base64Encode(e.bytes!)}';
-          }
-          return e.file.name;
-        }).toList();
-      } else {
-        certData = _uploadedCertificates
-            .where((e) => e.file.path != null)
-            .map((e) => e.file.path!)
-            .toList();
-      }
+    try {
+      final apiService = ApiService();
       
+      // Get the profile to match with existing skill ids if available
+      final profile = await apiService.getMyProfile();
+      final userSkills = profile['skills'] as List<dynamic>? ?? [];
+      final firstSkillId = userSkills.isNotEmpty ? userSkills[0]['skillId'] : null;
+
+      // Upload each certificate to backend
+      for (var cert in _uploadedCertificates) {
+        if (cert.file.path != null) {
+          await apiService.uploadCertificate(
+            File(cert.file.path!),
+            cert.file.name,
+            firstSkillId ?? '',
+          );
+        }
+      }
+
+      // Legacy support for local UI compatibility
+      final prefs = await SharedPreferences.getInstance();
+      List<String> certData = _uploadedCertificates
+          .where((e) => e.file.path != null)
+          .map((e) => e.file.path!)
+          .toList();
       await prefs.setStringList('savedCertificates', certData);
 
       if (!mounted) return;
+      
+      // Dismiss loading dialog
+      Navigator.pop(context);
 
       Navigator.pushAndRemoveUntil(
         context,
@@ -130,6 +150,12 @@ class _UploadCertificatePageState extends State<UploadCertificatePage> {
       );
       
     } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Dismiss loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload certificates: ${e.toString()}')),
+        );
+      }
       if (kDebugMode) print("Navigation/Save Error: $e");
     }
   }
